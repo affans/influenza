@@ -11,22 +11,30 @@ include("PopStruct.jl")
 include("functions.jl")
 
 
-sigma1 = 0.4
+ht = init()
+P = InfluenzaParameters()
+@btime init()
+@btime setup_demographic($ht)
+@btime apply_vaccination($ht, $P)
+function time_setup_contact(h)
+    Fail_Contact_Matrix    = zeros(Int64, 15, 15)
+    Contact_Matrix_General = zeros(Int64, 15, 15)
+    Number_in_age_group    = zeros(Int64, 15)
+    Age_group_Matrix       = zeros(Int64, 15, 10000)
+    setup_contact_matrix(h, Age_group_Matrix, Number_in_age_group)
+end
+@btime time_setup_contact($ht)
+@btime  increase_timestate(ht[2],P)
+@btime main_test()
+
+sigma1 = 1
 
 ef1 = 0.4
-P=InfluenzaParameters(
-    precaution_factorS = sigma1,
-    precaution_factorV = 0.0,
-    VaccineEfficacy = ef1,
-    GeneralCoverage = 1,
-    Prob_transmission = 0.079,
-    sim_time = 365,
-    grid_size_human = 10000
-)
+
 
 
 humans = Array{Human}(P.grid_size_human)
-    
+
 setup_human(humans)
 setup_demographic(humans,P)
 vaccination(humans,P)
@@ -49,7 +57,7 @@ for j = 1:15
         soma += humans[k].vaccineEfficacy
 
     end
-    soma = soma/length(A) 
+    soma = soma/length(A)
     println(f,"$j $soma")
 end
 close(f)
@@ -80,7 +88,7 @@ function test_humanage()
     find(x -> x.age >= 15, humans)
     find(x -> x.age >= 15 && x.gender == MALE, humans)
     find(x -> x.age >= 15 && x.gender == FEMALE, humans)
-    
+
 end
 
 #### Testing LogNormal
@@ -93,7 +101,7 @@ end
 
 writedlm("testeLogNormal.dat",d1)
 
-##Contact distribution 
+##Contact distribution
 X = Matrix{Float64}(15,15)
 X[1,:] = ContactMatrix[1,:]
 for i = 2:15
@@ -121,14 +129,14 @@ end
 function myfunc()
     A = rand(200, 200, 400)
     maximum(A)
-end 
+end
 
 #############################################################
 #### Testing Frailty indexx, vaccine coverage etc
 FrIndex = Matrix{Float64}(length(humans),2)
 for i = 1:length(humans)
 rd = rand()
-MaxFra,MinFra = FrailtyIndex(humans[i])
+MaxFra,MinFra = frailty(humans[i])
 FrIndex[i,2] = rd*(MaxFra-MinFra)+MinFra
 FrIndex[i,1] = humans[i].age
 end
@@ -154,7 +162,7 @@ writedlm("VaccineCov.dat",FrIndex)
 find(x -> x.age <= 64 && x.age >= 50, humans)
 
 find(x -> x.age <= 64 && x.age >= 50 && x.vaccinationStatus == 1, humans)
- 
+
 ###############################################################33
 ######################### Testing number of daily contacts
 
@@ -163,7 +171,7 @@ NB = N_Binomial()
 ContactMatrix = ContactMatrixFunc()
 for t = 1:P.sim_time
     for i=1:P.grid_size_human
-        
+
         humans[i].daily_contacts = rand(NB[humans[i].contact_group])
         for j=1:humans[i].daily_contacts
             r =finding_contact2(humans,i,ContactMatrix,Age_group_Matrix,Number_in_age_group)# rand(1:P.grid_size_human)#
@@ -179,6 +187,3 @@ end
 
 TestMatrix2 = TestMatrix2/P.sim_time
 writedlm("DailyContactsP10000.dat",TestMatrix2)
-
-
-
