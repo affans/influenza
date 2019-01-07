@@ -133,3 +133,20 @@ end
 #     dt = CSV.File("beta_0_01_symp.dat", header=sims, delim='\t') |> DataFrame
 
 # end
+
+using DataFrames
+using Statistics
+using Query
+using Base.Filesystem
+using CSV
+cd("/Users/abmlab/Dropbox/PhdProject_Affan/Medicago Project/full_calibration_2")
+pwd()
+
+headers = ["sim$i" for i = 1:500]  
+dt = CSV.File("beta_0_05_symp.dat", delim='\t', header=headers) |> DataFrame
+dt.time = 1:250 ## add a time column for `melt` purposes
+
+f(g) = g |> @map(mean(_))
+@time f(dt)
+@time f(dt)
+@time f(dt)
