@@ -104,13 +104,13 @@ end
 function run_calibration_attackrate()
     ## calibrating to attack rate simply is running the full simulations 
     ## and then seeing the number of symptomatics at the end
-    beta_range = 0.001:0.0002:0.01
+    beta_range = 0.01:0.001:0.05
     for i in beta_range
         println("starting simulation for i: $i")
         ## do not add the trailing slash to have "beta_0_0x" appended to the filename
         dname = "./Calibration/beta_$(replace(string(i), "." => "_"))"
         #println(dname)
-        @everywhere P = InfluenzaParameters(vaccine_efficacy = 0.0)        
+        @everywhere P = InfluenzaParameters(sim_time = 250, vaccine_efficacy = 0.0, transmission_beta=$i)        
         results = pmap(x -> main(x, P), 1:500)
         println("... processing results")
         dataprocess(results, P, 500, directory=dname)   
@@ -118,6 +118,12 @@ function run_calibration_attackrate()
     println("calibration finished")
 end
 
+function run_single(trans)    
+    @everywhere P = InfluenzaParameters(vaccine_efficacy = 0.0, transmission_beta=$trans)  
+    results = pmap(x -> main(x, P), 1:500)        
+    dataprocess(results, P, 500, directory="./single/")
+    return results
+end
 # beta_range = 0.001:0.0002:0.01
 # replace.(string.(beta_range), "." => "_")
 

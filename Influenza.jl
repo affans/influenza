@@ -21,7 +21,8 @@ function init()
 end
 
 function main(simnum::Int64, P::InfluenzaParameters)
-    #println("starting simulation number: $simnum")
+    println("starting simulation number: $simnum")
+    println("transmission: $(P.transmission_beta)")
     humans = init()
     setup_demographic(humans)  ## TO DO, unit tests, plotting  
     apply_vaccination(humans,P)    ## TO DO, unit tests, plotting
