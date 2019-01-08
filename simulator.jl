@@ -90,20 +90,15 @@ function dataprocess(results, P::InfluenzaParameters, numberofsims; directory=".
     
 end
 
-function run_main(P::InfluenzaParameters, numberofsims::Int64; dataprocess=true)    
-    println("starting simulations...")
-    println("setting up Progress bar")
-    results = pmap(x -> main(x, P), 1:numberofsims)
-    println("simulations ended...")
-    return results
-    if dataprocess
-        dataprocess(results, P, numberofsims)
-    end
+
+function run_calibration_R0()
+    error("not implemented")
 end
 
 function run_calibration_attackrate()
     ## calibrating to attack rate simply is running the full simulations 
     ## and then seeing the number of symptomatics at the end
+    ## the full simulations are run over a range of beta values.     
     beta_range = 0.01:0.001:0.05
     for i in beta_range
         println("starting simulation for i: $i")
@@ -118,35 +113,30 @@ function run_calibration_attackrate()
     println("calibration finished")
 end
 
-function run_single(trans)    
-    @everywhere P = InfluenzaParameters(vaccine_efficacy = 0.0, transmission_beta=$trans)  
+function run_beta(beta; dataprocess=true) 
+    ### runs 500 simulations with a particular beta value.    
+    @everywhere P = InfluenzaParameters(vaccine_efficacy = 0.0, transmission_beta=$beta)  
     results = pmap(x -> main(x, P), 1:500)        
-    dataprocess(results, P, 500, directory="./single/")
+    if dataprocess
+        dataprocess(results, P, numberofsims)
+    end
     return results
 end
-# beta_range = 0.001:0.0002:0.01
-# replace.(string.(beta_range), "." => "_")
 
-# function process()
-#     sims = ["sim$i" for i = 1:500] ## column names
-#     #ypes = [i => Int64 for i = 1:500]) ## column types
-#     dt = CSV.File("beta_0_01_symp.dat", header=sims, delim='\t') |> DataFrame
-
-# end
-
-using DataFrames
-using Statistics
-using Query
-using Base.Filesystem
-using CSV
-cd("/Users/abmlab/Dropbox/PhdProject_Affan/Medicago Project/full_calibration_2")
-pwd()
-
-headers = ["sim$i" for i = 1:500]  
-dt = CSV.File("beta_0_05_symp.dat", delim='\t', header=headers) |> DataFrame
-dt.time = 1:250 ## add a time column for `melt` purposes
-
-f(g) = g |> @map(mean(_))
-@time f(dt)
-@time f(dt)
-@time f(dt)
+function run_attackrate(;vaccineonoff = 0.0, dataprocess=true)
+    ### runs 500 simulations with a particular beta value. 
+    ars = [0.02, 0.06, 0.12]
+    f(y) = (y + 0.234616)/11.668
+    betas = f.(ars)
+    for ar in ars
+        β = f(ar)
+        dname =  "./Run1/beta_$(replace(string(ar), "." => "_"))"
+        @everywhere P = InfluenzaParameters(vaccine_efficacy = $vaccineonoff, transmission_beta=$β)  
+        results = pmap(x -> main(x, P), 1:500)
+        println("simulations for β=$β ended...")    
+        if dataprocess
+            println("starting dataprocess β=$β ended...")   
+            dataprocess(results, P, 500, )
+        end
+    end      
+end
