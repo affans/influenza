@@ -113,17 +113,17 @@ function run_calibration_attackrate()
     println("calibration finished")
 end
 
-function run_beta(beta; dataprocess=true) 
+function run_beta(beta; process=true) 
     ### runs 500 simulations with a particular beta value.    
     @everywhere P = InfluenzaParameters(vaccine_efficacy = 0.0, transmission_beta=$beta)  
     results = pmap(x -> main(x, P), 1:500)        
-    if dataprocess
-        dataprocess(results, P, numberofsims)
+    if process
+        dataprocess(results, P, 500)
     end
     return results
 end
 
-function run_attackrate(;vaccineonoff = 0.0, dataprocess=true)
+function run_attackrate(;vaccineonoff = 0.0, process=true)
     ### runs 500 simulations with a particular beta value. 
     ars = [0.02, 0.06, 0.12]
     f(y) = (y + 0.234616)/11.668
@@ -131,12 +131,14 @@ function run_attackrate(;vaccineonoff = 0.0, dataprocess=true)
     for ar in ars
         β = f(ar)
         dname =  "./Run1/beta_$(replace(string(ar), "." => "_"))"
+        println("starting simulations for β=$β ended...")  
         @everywhere P = InfluenzaParameters(vaccine_efficacy = $vaccineonoff, transmission_beta=$β)  
+        println(P)
         results = pmap(x -> main(x, P), 1:500)
         println("simulations for β=$β ended...")    
-        if dataprocess
+        if process
             println("starting dataprocess β=$β ended...")   
-            dataprocess(results, P, 500, )
+            dataprocess(results, P, 500, directory=dname)
         end
     end      
 end
