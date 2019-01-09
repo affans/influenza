@@ -187,3 +187,24 @@ end
 
 TestMatrix2 = TestMatrix2/P.sim_time
 writedlm("DailyContactsP10000.dat",TestMatrix2)
+
+
+## AFFAN'S UNIT TESTS.
+humans = init();
+p = InfluenzaParameters(vaccine_efficacy = 0.5);
+setup_demographic(humans)
+function check_vaccine_coverage_levels(brak, h)
+    ## find everyone less than 4 years of age
+    lfour = findall(x -> x.age > brak[1] && x.age <= brak[2], h)
+    println("lfour: $(length(lfour))")
+    lfour_v = findall(x -> x.age > brak[1] && x.age <= brak[2] && x.vaccineEfficacy > 0.0, h)
+    println("vax: $(length(lfour_v))")
+    cov = length(lfour_v)/length(lfour)
+    println("coverage: $cov")
+    println("")
+end
+check_vaccine_coverage_levels((0, 4), humans)
+check_vaccine_coverage_levels((4, 49), humans)
+check_vaccine_coverage_levels((49, 64), humans)
+check_vaccine_coverage_levels((64, 100), humans)
+

@@ -1,18 +1,18 @@
 
 # abm influenza 
 # filename: functions.jl
-function contact_dynamic2(h, P::InfluenzaParameters, fcm, agm, nagm, Contact_Matrix_General)
+function contact_dynamic2(h, P::InfluenzaParameters, fcm, agm, nagm, cmg)
     NB = N_Binomial()
     ContactMatrix = ContactMatrixFunc()
    
     for i=1:length(h)
         if h[i].health == SUSC
-            # don't need to save this information
+            # don't need to save this information... we might
             # h[i].daily_contacts = rand(NB[h[i].contact_group])
             _contacts = rand(NB[h[i].contact_group])
             for j=1:_contacts
                 r = finding_contact2(h, i, ContactMatrix, agm, nagm)
-                #Contact_Matrix_General[h[i].contact_group, h[r].contact_group] += 1
+                cmg[h[i].contact_group, h[r].contact_group] += 1
                 
                 if h[r].health == SYMP
                     if rand() < (P.transmission_beta * (1 - h[i].vaccineEfficacy))
@@ -35,7 +35,6 @@ function contact_dynamic2(h, P::InfluenzaParameters, fcm, agm, nagm, Contact_Mat
         end
     end ##close Grid human
 end
-
 
 function finding_contact2(h, idx, M, agm, nagm)
     rd = rand()

@@ -1,9 +1,14 @@
-using ClusterManagers
+## STDLIB
+using Random
 using DelimitedFiles
 using Distributed
-using DataFrames
 using Base.Filesystem
+## ADDED PACKAGES
+using ClusterManagers
+using DataFrames
 using CSV
+using JSON
+
 ## call all the using in main package to trigger precompilation 
 ## the precompilation files will get shared amongst all nodes so won't clash with `@everywhere` triggering precompilation
 using Parameters      ## with julia 1.1 this is now built in.
@@ -26,17 +31,15 @@ addprocs(SlurmManager(544), partition="defq", N=17)
 function dataprocess(results, P::InfluenzaParameters, numberofsims; directory="./Results/")    
     ## if the directory argument is passed without a trailing slash, 
     ## it becomes a prepend to the filename.
-
     
-    resultsL      = zeros(  Int64, P.sim_time, numberofsims)
+    resultsL      = zeros(Int64, P.sim_time, numberofsims)
     resultsA      = zeros(Int64, P.sim_time, numberofsims)
     resultsS      = zeros(Int64, P.sim_time, numberofsims)
     resultsR0     = zeros(Int64, numberofsims)
     resultsSymp   = zeros(Int64, numberofsims)
     resultsAsymp  = zeros(Int64, numberofsims)
     resultsNumAge = zeros(Int64, P.grid_size_human, numberofsims)
-    resultsFailVector = zeros(Int64, P.grid_size_human, numberofsims)
-    
+    resultsFailVector = zeros(Int64, P.grid_size_human, numberofsims)    
     resultsInfOrNot = zeros(Int64, P.grid_size_human, numberofsims)    
     VacStatus = zeros(Int64, P.grid_size_human, numberofsims)
 
@@ -87,7 +90,7 @@ function dataprocess(results, P::InfluenzaParameters, numberofsims; directory=".
     writedlm(string("$directory", "_FailVector.dat"),resultsFailVector)
     writedlm(string("$directory", "_InfOrNot.dat"),resultsInfOrNot)
     writedlm(string("$directory", "_VacStatus.dat"),VacStatus)
-    
+    JSON.print(open(string("$directory", "parameters.dat"), "w"), P, 4)
 end
 
 
@@ -113,7 +116,7 @@ function run_calibration_attackrate()
     println("calibration finished")
 end
 
-function run_beta(beta; process=true) 
+function run_single_beta(beta; process=true) 
     ### runs 500 simulations with a particular beta value.    
     @everywhere P = InfluenzaParameters(vaccine_efficacy = 0.0, transmission_beta=$beta)  
     results = pmap(x -> main(x, P), 1:500)        
@@ -123,22 +126,24 @@ function run_beta(beta; process=true)
     return results
 end
 
-function run_attackrate(;vaccineonoff = 0.0, process=true)
-    ### runs 500 simulations with a particular beta value. 
-    ars = [0.02, 0.06, 0.12]
-    f(y) = (y + 0.234616)/11.668
-    betas = f.(ars)
-    for ar in ars
+function run_attackrate(;process=true)
+    ### runs 500 simulations with a particular attack rate. 
+    # we use the regression formula (y + 0.234616)/11.668 (from calibration) to estimate the beta value.
+    ars = [0.04]
+    ves = [0.4 0.5 0.6 0.7 0.8]
+    f(y) = round((y + 0.234616)/11.668, digits = 4)    
+    for ar in ars, ve in ves
+        randdir = randstring()
         β = f(ar)
-        dname =  "./Run1/beta_$(replace(string(ar), "." => "_"))"
-        println("starting simulations for β=$β ended...")  
-        @everywhere P = InfluenzaParameters(vaccine_efficacy = $vaccineonoff, transmission_beta=$β)  
-        println(P)
+        dname =  "./$randdir/ar_$(replace(string(ar), "." => "_"))_ve_$(replace(string(ve), "." => "_"))/"
+        println("starting simulations for β=$β, ar=$ar, ve=$ve...")  
+        @everywhere P = InfluenzaParameters(sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β)          
         results = pmap(x -> main(x, P), 1:500)
         println("simulations for β=$β ended...")    
         if process
-            println("starting dataprocess β=$β ended...")   
+            println("starting dataprocess β=$β, ar=$ar, ve=$ve ended...")   
             dataprocess(results, P, 500, directory=dname)
         end
     end      
 end
+

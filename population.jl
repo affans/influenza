@@ -6,7 +6,7 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     statetime::T
 
     #vaccinationStatus::T
-    vaccineEfficacy::Union{Float64, Nothing}
+    vaccineEfficacy::Float64
 
     WhoInf::T
     WentTo::HEALTH  # we want to know whether human was asymptomatic or symptomatic.. need this information for other calculations
@@ -19,7 +19,7 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     Coverage::Float64
     NumberFails::T
 
-    Human{Int64}() = new(-1, SUSC, UNDEF, 0, 999, nothing, -1, UNDEF,
+    Human{Int64}() = new(-1, SUSC, UNDEF, 0, 999, 0.0, -1, UNDEF,
                             nothing, nothing, nothing, 0, 0.0, 0)
     function Human(idx)
         h = Human{Int64}()
@@ -33,7 +33,7 @@ function setup_demographic(h)
     for i = 1:length(h)
         if h[i].age == nothing
             rn = rand()
-            g = findfirst(x -> rn <= x, dist) ## THERE IS A CLOSURE BUG HERE. DO NOT USE INBOUNDS. SEE FTEST() testing.
+            g = findfirst(x -> rn <= x, dist) ## THERE IS A CLOSURE BUG HERE. DO NOT USE INBOUNDS. SEE FTEST() testing. This was fixed. See my issue on github
             if g !== nothing
                 h[i].age = rand(AgeMin[g] : AgeMax[g])
                 h[i].contact_group = min(g, 15)  ## maximum of 15 contact groups
@@ -215,38 +215,37 @@ function frailty(age)
     return max1,min1
 end
 
-function apply_vaccination(h, P)
-    numofvax = 0
-    for i = 1:length(h)
-        rn = rand()
-        lage = h[i].age
-        vaxon = false
-        if lage <= 4 && rn < 0.26
-            vaxon = true
-        elseif (lage > 4 && lage <= 49) && rn < 0.23
-            vaxon = true
-        elseif (lage > 49 && lage <= 64) && rn < 0.38
-            vaxon = true
-        elseif rn < 0.70
-            vaxon = true
-        end
-        MaxFra,MinFra = frailty(lage)
-        FrIndex = rand()*(MaxFra-MinFra)+MinFra
-        if vaxon
-            h[i].vaccineEfficacy = P.vaccine_efficacy*(1.0-FrIndex)
-            numofvax = numofvax + 1
-        else  ## else statement is neccessary since initially the parameter is initi
-            h[i].vaccineEfficacy = 0.0
-        end
+function _apply_vax(bracket, conf, h, P)
+    ## this is a helper function. 
+    if !(typeof(bracket) == Tuple{Int64, Int64})
+        error("age must be a tuple")
     end
-    return numofvax
+    if !(typeof(conf) == Tuple{Int64, Int64})
+        error("confidence interval must be a tuple")
+    end
+    g = findall(x -> x.age > bracket[1] && x.age <= bracket[2], h)    
+    howmany = Int(round(rand(conf[1]:conf[2])/100*length(g)))
+    whotovax = sample(g, howmany, replace=false) #rand(g, howmany) DO NOT USE RAND.. it samples with replacement
+    for i in g        
+        MaxFra,MinFra = frailty(h[i].age)
+        FrIndex = rand()*(MaxFra-MinFra)+MinFra
+        h[i].vaccineEfficacy = round(P.vaccine_efficacy*(1.0-FrIndex), digits = 3)
+    end
 end
 
+function apply_vaccination(h, P)
+    ## first tuple argument is the age bracket (0, 4): 0 is not included, 4 is included in the if statement
+    ## the second tuple is the coverage confidence interval.. select a number between 20-32% of coverage for 0-4 year olds.
+    _apply_vax((0, 4), (20, 32), h, P)
+    _apply_vax((4, 49), (18, 27), h, P)
+    _apply_vax((49, 64), (34, 42), h, P)
+    _apply_vax((64, 100), (65, 73), h, P)
+end
 
 function setup_contact_matrix(h, agm, nagm)
     for i = 1:length(h)
         cg = h[i].contact_group
-        agm[cg, (nagm[cg]+1)] = h[i].index
         nagm[cg] += 1
+        agm[cg, nagm[cg]] = h[i].index        
     end
 end
