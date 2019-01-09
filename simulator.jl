@@ -25,6 +25,8 @@ using StaticArrays
 #using .InfluenzaModel
     
 addprocs(SlurmManager(544), partition="defq", N=17)
+
+
 @everywhere include("Influenza.jl")
 @everywhere using .InfluenzaModel
 
@@ -133,9 +135,9 @@ function run_attackrate(;process=true)
     ves = [0.4 0.5 0.6 0.7 0.8]
     f(y) = round((y + 0.234616)/11.668, digits = 4)    
     for ar in ars, ve in ves
-        randdir = randstring()
+        #randdir = randstring()
         β = f(ar)
-        dname =  "./$randdir/ar_$(replace(string(ar), "." => "_"))_ve_$(replace(string(ve), "." => "_"))/"
+        dname =  "./ar_$(replace(string(ar), "." => "_"))_ve_$(replace(string(ve), "." => "_"))/"
         println("starting simulations for β=$β, ar=$ar, ve=$ve...")  
         @everywhere P = InfluenzaParameters(sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β)          
         results = pmap(x -> main(x, P), 1:500)

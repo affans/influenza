@@ -190,9 +190,16 @@ writedlm("DailyContactsP10000.dat",TestMatrix2)
 
 
 ## AFFAN'S UNIT TESTS.
+using Base.Filesystem
+
+
+include("Influenza.jl")
+using .InfluenzaModel
 humans = init();
-p = InfluenzaParameters(vaccine_efficacy = 0.5);
-setup_demographic(humans)
+p = InfluenzaParameters(vaccine_efficacy = 0.4);
+InfluenzaModel.setup_demographic(humans)
+InfluenzaModel.apply_vaccination(humans,p) 
+
 function check_vaccine_coverage_levels(brak, h)
     ## find everyone less than 4 years of age
     lfour = findall(x -> x.age > brak[1] && x.age <= brak[2], h)

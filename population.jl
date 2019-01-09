@@ -226,7 +226,7 @@ function _apply_vax(bracket, conf, h, P)
     g = findall(x -> x.age > bracket[1] && x.age <= bracket[2], h)    
     howmany = Int(round(rand(conf[1]:conf[2])/100*length(g)))
     whotovax = sample(g, howmany, replace=false) #rand(g, howmany) DO NOT USE RAND.. it samples with replacement
-    for i in g        
+    for i in whotovax
         MaxFra,MinFra = frailty(h[i].age)
         FrIndex = rand()*(MaxFra-MinFra)+MinFra
         h[i].vaccineEfficacy = round(P.vaccine_efficacy*(1.0-FrIndex), digits = 3)
@@ -236,6 +236,7 @@ end
 function apply_vaccination(h, P)
     ## first tuple argument is the age bracket (0, 4): 0 is not included, 4 is included in the if statement
     ## the second tuple is the coverage confidence interval.. select a number between 20-32% of coverage for 0-4 year olds.
+    println("hello")
     _apply_vax((0, 4), (20, 32), h, P)
     _apply_vax((4, 49), (18, 27), h, P)
     _apply_vax((49, 64), (34, 42), h, P)
