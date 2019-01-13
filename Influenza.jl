@@ -57,39 +57,48 @@ function main(simnum::Int64, P::InfluenzaParameters)
 
     ## find all the humans that went to symptomatic after being infected by the initial latent case.
     first_inf = findall(x-> x.WhoInf == initial && x.WentTo == SYMP, humans)
-
-    ## find all the humans that got infected by someone that eventually ended up as sympotmatic (or asymptomatic)    
+    first_inf_asymp =  findall(x-> x.WhoInf == initial && x.WentTo == ASYMP, humans)
+    
+    ## how many total sickness did sympomatics produce?
+    ## how many total sickness did asymptomatics produce? 
+    ##  -- this will be less 1 from the total sickness.. for some reason
     symp_inf  = findall(x -> x.WhoInf > 0 && humans[x.WhoInf].WentTo == SYMP,  humans)
     asymp_inf = findall(x -> x.WhoInf > 0 && humans[x.WhoInf].WentTo == ASYMP, humans)
     
     numb_symp_inf = length(symp_inf)   ## the total number of people all symptomatics made sick.
     numb_asymp_inf = length(asymp_inf) ## the total number of people all asymptomatics made sick.
     numb_first_inf = length(first_inf) ## the number of people infected by the initial latent case.
+    numb_first_inf_asymp = length(first_inf_asymp)
+
+
 
     contact_groups = zeros(Int64, P.grid_size_human)   ## just the contact groups of everyone.
+    demographic_group = zeros(Int64, P.grid_size_human)
     number_of_fails = zeros(Int64, P.grid_size_human)  ## this property counts how many times susc i met a sick person and failed to get sick.
     vax_status = zeros(Int64,P.grid_size_human)        ## the vaccination status of individual i. 
     infection_matrix = zeros(Int64, 15, 15)          
     InfOrNot = zeros(Int64, P.grid_size_human)         ## at the end of the simulation, is the person still susceptible?
-   
+    SympOrNot = zeros(Int64, P.grid_size_human)        ## at the end of the simulation, if the person was infected, whether they went symptomatic/asymptomatic
 
     for i = 1:length(humans)        
         contact_groups[i] = humans[i].contact_group           
+        demographic_group[i] = humans[i].group
         number_of_fails[i] = humans[i].NumberFails              
         vax_status[i] = humans[i].vaccineEfficacy > 0 ? 1 : 0  
         ## if humans[i] was infected (another way to check is for WentTo == SYMP/ASYMP) -- good way to test the model.
-        if humans[i].WhoInf > 0
-            infection_matrix[humans[i].contact_group, humans[humans[i].WhoInf].contact_group] += 1 
-            if !(humans[i].health == SUSC)
-                InfOrNot[i] = 1
-            end
+        if !(humans[i].health == SUSC)
+            if humans[i].WhoInf > 0 
+                infection_matrix[humans[i].contact_group, humans[humans[i].WhoInf].contact_group] += 1 
+            end                        
+            InfOrNot[i] = 1
+            SympOrNot[i] = Int(humans[i].WentTo)            
         end
     end
 
     return latent_ctr, symp_ctr, asymp_ctr, 
     numb_first_inf, numb_symp_inf, numb_asymp_inf, 
     infection_matrix, Fail_Contact_Matrix, Contact_Matrix_General, 
-    contact_groups, number_of_fails, InfOrNot, vax_status
+    contact_groups, number_of_fails, InfOrNot, vax_status, SympOrNot, demographic_group
 end
 
 end

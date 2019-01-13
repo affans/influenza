@@ -11,9 +11,9 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     WhoInf::T
     WentTo::HEALTH  # we want to know whether human was asymptomatic or symptomatic.. need this information for other calculations
 
-    age::Union{T, Nothing}    ##used
-    group::Union{T, Nothing}  ## used
-    contact_group::Union{T, Nothing}        ##used
+    age::Union{T, Nothing}    
+    group::Union{T, Nothing}  
+    contact_group::Union{T, Nothing}      
 
     daily_contacts::T
     Coverage::Float64
@@ -41,17 +41,15 @@ function setup_demographic(h)
         end
 
         ###Group 1 - young child, 2 - school child, 3 - working adult, 4 - elderly
-        if h[i].age<=4
+        if h[i].age <= 4
             h[i].group = 1
-        elseif h[i].age<=19
+        elseif h[i].age <= 19
             h[i].group = 2
-        elseif h[i].age<= 59
+        elseif h[i].age <= 59
             h[i].group = 3
         else
             h[i].group = 4
         end
-        ## TO DO Remove.
-        #h[i].Coverage = get_vaccine_coverage(h[i])
     end
 end
 
@@ -100,27 +98,10 @@ end
 # end
 # @btime bar()
 
-##
-# function get_vaccine_coverage(h::Human)
-#     ## DEPRECATED
-#     ## vaccine coverage at the age group level.
-#     ## may not need this assigned at the individual level.
-#     ## TODO: change this and remove the struct field
-#     if h.age<=4
-#         Coverage = 0.26
-#     elseif h.age<= 49
-#         Coverage = 0.23
-#     elseif h.age<= 64
-#         Coverage = 0.38
-#     else
-#         Coverage = 0.70
-#     end
-#     return Coverage
-# end
-
 function setup_rand_initial_latent(h, P::InfluenzaParameters)
     randperson = rand(1:P.grid_size_human)
     make_human_latent(h[randperson], P)
+    h[randperson].WhoInf = 0 ## no one infected this person
     return randperson
 end
 
@@ -129,7 +110,7 @@ function make_human_latent(h::Human, P::InfluenzaParameters)
     h.health = LAT
     h.swap = UNDEF
     h.statetime = rand(P.Latent_period_Min:P.Latent_period_Max)
-    h.timeinstate = 0
+    h.timeinstate = 0    
 end
 
 function make_human_asymp(h::Human, P::InfluenzaParameters)
@@ -236,7 +217,7 @@ end
 function apply_vaccination(h, P)
     ## first tuple argument is the age bracket (0, 4): 0 is not included, 4 is included in the if statement
     ## the second tuple is the coverage confidence interval.. select a number between 20-32% of coverage for 0-4 year olds.
-    println("hello")
+
     _apply_vax((0, 4), (20, 32), h, P)
     _apply_vax((4, 49), (18, 27), h, P)
     _apply_vax((49, 64), (34, 42), h, P)

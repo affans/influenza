@@ -192,13 +192,14 @@ writedlm("DailyContactsP10000.dat",TestMatrix2)
 ## AFFAN'S UNIT TESTS.
 using Base.Filesystem
 
-
+using Revise
 include("Influenza.jl")
 using .InfluenzaModel
 humans = init();
 p = InfluenzaParameters(vaccine_efficacy = 0.4);
 InfluenzaModel.setup_demographic(humans)
 InfluenzaModel.apply_vaccination(humans,p) 
+
 
 function check_vaccine_coverage_levels(brak, h)
     ## find everyone less than 4 years of age
@@ -215,3 +216,40 @@ check_vaccine_coverage_levels((4, 49), humans)
 check_vaccine_coverage_levels((49, 64), humans)
 check_vaccine_coverage_levels((64, 100), humans)
 
+Fail_Contact_Matrix    = zeros(Int64, 15, 15)    ## how many times did susc/sick contact group i meet contact group j meet but failed to infect.
+Contact_Matrix_General = zeros(Int64, 15, 15)    ## how many times did contact group i meet with contact group j
+Number_in_age_group    = zeros(Int64, 15)                      # vector that tells us number of people in each age group.
+Age_group_Matrix       = zeros(Int64, 15, p.grid_size_human)   # a matrix representation of who is inside that age group (ie. row 1 has all the people that have group 1). 
+
+## check if the Age_group_Matrix works 
+
+## this function just fills in the empty matrices as defined above.
+InfluenzaModel.setup_contact_matrix(humans, Age_group_Matrix, Number_in_age_group)
+ctr = 0
+for i = 1:15
+    global ctr
+    ctr += length(findall(x -> x> 0, Age_group_Matrix[i, :])) 
+end
+@assert ctr == p.grid_size_human
+@assert sum(Number_in_age_group) == p.grid_size_human
+
+for t=1:p.sim_time        
+    InfluenzaModel.contact_dynamic2(humans, p, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General)
+    for i=1:p.grid_size_human
+       InfluenzaModel.increase_timestate(humans[i], p)
+    end          
+end
+ContactMatrix = InfluenzaModel.ContactMatrixFunc()
+r = finding_contact2(humans, 41, ContactMatrix, Age_group_Matrix, Number_in_age_group)
+
+
+function finding_contact2(h, idx, M, agm, nagm)
+    rd = rand()
+    g = h[idx].contact_group
+    println(g)
+    g2 = findfirst(x -> rd <= x, M[:,g])         
+    println(g2)
+    people_to_search = agm[g2,1:nagm[g2]]
+    filter!(x -> x != 18, people_to_search)
+    return rand(people_to_search)
+end 
