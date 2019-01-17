@@ -253,3 +253,14 @@ function finding_contact2(h, idx, M, agm, nagm)
     filter!(x -> x != 18, people_to_search)
     return rand(people_to_search)
 end 
+function check_group(h)
+    ar = zeros(Int64, 4)
+    for i = 1:length(h)        
+        ar[h[i].group] += 1
+    end
+    return ar
+end
+demographic_group = zeros(Int64, 10000)
+for i = 1:length(humans)              
+    demographic_group[i] = humans[i].group  
+end

@@ -98,7 +98,8 @@ function main(simnum::Int64, P::InfluenzaParameters)
     return latent_ctr, symp_ctr, asymp_ctr, 
     numb_first_inf, numb_symp_inf, numb_asymp_inf, 
     infection_matrix, Fail_Contact_Matrix, Contact_Matrix_General, 
-    contact_groups, number_of_fails, InfOrNot, vax_status, SympOrNot, demographic_group
+    contact_groups, number_of_fails, InfOrNot, 
+    vax_status, SympOrNot, demographic_group
 end
 
 end
