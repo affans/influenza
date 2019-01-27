@@ -41,14 +41,16 @@ function setup_demographic(h)
         end
 
         ###Group 1 - young child, 2 - school child, 3 - working adult, 4 - elderly
-        if h[i].age <= 4
+        if h[i].age <= 8
             h[i].group = 1
-        elseif h[i].age <= 19
+        elseif h[i].age <= 17
             h[i].group = 2
-        elseif h[i].age <= 59
+        elseif h[i].age <= 49
             h[i].group = 3
-        else
+        elseif h[i].age <= 64
             h[i].group = 4
+        else
+            h[i].group = 5
         end
     end
 end
@@ -105,7 +107,7 @@ function setup_rand_initial_latent(h, P::InfluenzaParameters)
     return randperson
 end
 
-function make_human_latent(h::Human, P::InfluenzaParameters)
+@inline function make_human_latent(h::Human, P::InfluenzaParameters)
     ## make the i'th human infected
     h.health = LAT
     h.swap = UNDEF
@@ -113,7 +115,7 @@ function make_human_latent(h::Human, P::InfluenzaParameters)
     h.timeinstate = 0    
 end
 
-function make_human_asymp(h::Human, P::InfluenzaParameters)
+@inline function make_human_asymp(h::Human, P::InfluenzaParameters)
     ## make the i'th human infected
     h.health = ASYMP    # make the health ->inf
     h.swap = UNDEF
@@ -123,7 +125,7 @@ function make_human_asymp(h::Human, P::InfluenzaParameters)
     h.WentTo = ASYMP
 end
 
-function make_human_symp(h::Human, P::InfluenzaParameters)
+@inline function make_human_symp(h::Human, P::InfluenzaParameters)
     ## make the i'th human infected
     h.health = SYMP    # make the health ->inf
     h.swap = UNDEF
@@ -133,7 +135,7 @@ function make_human_symp(h::Human, P::InfluenzaParameters)
     h.WentTo = SYMP
 end
 
-function make_human_recovered(h::Human, P::InfluenzaParameters)
+@inline function make_human_recovered(h::Human, P::InfluenzaParameters)
     ## make the i'th human recovered
     h.health = REC    # make the health -> latent
     h.swap = UNDEF
@@ -196,7 +198,7 @@ function frailty(age)
     return max1,min1
 end
 
-function _apply_vax(bracket, conf, h, P)
+@inline function _apply_vax(bracket, conf, h, P)
     ## this is a helper function. 
     if !(typeof(bracket) == Tuple{Int64, Int64})
         error("age must be a tuple")
@@ -217,7 +219,9 @@ end
 function apply_vaccination(h, P)
     ## first tuple argument is the age bracket (0, 4): 0 is not included, 4 is included in the if statement
     ## the second tuple is the coverage confidence interval.. select a number between 20-32% of coverage for 0-4 year olds.
-
+    #for (ag,cov) in zip([(0,4), (4,49), (49,64), (64,100)], [(20,32),(18,27),(34,42),(65,73)])
+    #    _apply_vax(ag, cov, h, P)
+    #end
     _apply_vax((0, 4), (20, 32), h, P)
     _apply_vax((4, 49), (18, 27), h, P)
     _apply_vax((49, 64), (34, 42), h, P)
@@ -231,3 +235,4 @@ function setup_contact_matrix(h, agm, nagm)
         agm[cg, nagm[cg]] = h[i].index        
     end
 end
+

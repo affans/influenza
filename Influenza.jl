@@ -1,6 +1,5 @@
 module InfluenzaModel
 
-
 using Parameters      ## with julia 1.1 this is now built in.
 using ProgressMeter   ## can now handle parallel with progress_pmap
 #using PmapProgressMeter
@@ -8,6 +7,7 @@ using ProgressMeter   ## can now handle parallel with progress_pmap
 using Distributions
 using StatsBase
 using StaticArrays
+using Random
 #using BenchmarkTools
 
 export init, main, Human, InfluenzaParameters
@@ -21,8 +21,9 @@ function init()
 end
 
 function main(simnum::Int64, P::InfluenzaParameters)
-    println("starting simulation number: $simnum")
-    println("transmission: $(P.transmission_beta)")
+    Random.seed!(simnum)
+    #println("starting simulation number: $simnum")
+    #println("transmission: $(P.transmission_beta)")
     humans = init()
     setup_demographic(humans)  ## TO DO, unit tests, plotting  
     apply_vaccination(humans,P)    ## TO DO, unit tests, plotting
@@ -46,9 +47,12 @@ function main(simnum::Int64, P::InfluenzaParameters)
     ## this function just fills in the empty matrices as defined above.
     setup_contact_matrix(humans, Age_group_Matrix, Number_in_age_group)
 
+    NB = N_Binomial()
+    CM = ContactMatrixFunc()
+
     ## main simulation loop.
     for t=1:P.sim_time        
-        contact_dynamic2(humans, P, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General)
+        contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General)
         for i=1:P.grid_size_human
            increase_timestate(humans[i], P)
         end      

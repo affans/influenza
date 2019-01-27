@@ -1,15 +1,10 @@
-
-# abm influenza 
-# filename: functions.jl
-function contact_dynamic2(h, P::InfluenzaParameters, fcm, agm, nagm, cmg)
-    NB = N_Binomial()
-    ContactMatrix = ContactMatrixFunc()
-   
+function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm, nagm, cmg)
     for i=1:length(h)
         if h[i].health == SUSC
             # don't need to save this information... we might
             # h[i].daily_contacts = rand(NB[h[i].contact_group])
             _contacts = rand(NB[h[i].contact_group])
+            #_contacts = rand(NB[1])
             for j=1:_contacts
                 r = finding_contact2(h, i, ContactMatrix, agm, nagm)
                 cmg[h[i].contact_group, h[r].contact_group] += 1
@@ -36,7 +31,7 @@ function contact_dynamic2(h, P::InfluenzaParameters, fcm, agm, nagm, cmg)
     end ##close Grid human
 end
 
-function finding_contact2(h, idx, M, agm, nagm)
+@inline function finding_contact2(h, idx, M, agm, nagm)
     rd = rand()
     g = h[idx].contact_group
     g2 = findfirst(x -> rd <= x, M[:,g])         
