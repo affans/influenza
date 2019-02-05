@@ -15,20 +15,24 @@ export init, main, Human, InfluenzaParameters
 include("parameters.jl")
 include("population.jl")
 include("functions.jl")
+include("mutation.jl")
 
-function init()
-    [Human(i) for i = 1:10000]
+function init(P::InfluenzaParameters)
+    [Human(i,P) for i = 1:P.grid_size_human]
 end
 
 function main(simnum::Int64, P::InfluenzaParameters)
     Random.seed!(simnum)
     #println("starting simulation number: $simnum")
     #println("transmission: $(P.transmission_beta)")
-    humans = init()
+    humans = init(P)
     setup_demographic(humans)  ## TO DO, unit tests, plotting  
     apply_vaccination(humans,P)    ## TO DO, unit tests, plotting
     
-    initial = setup_rand_initial_latent(humans,P) ## returns the ID of the initial person
+    Vaccine_Strain = Vector{Int8}(undef,P.sequence_size)
+    Creating_Vaccine_Vector(Vaccine_Strain,P)
+
+    initial = setup_rand_initial_latent(humans,P,Vaccine_Strain,0) ## returns the ID of the initial person
 
     ## data collection variables = number of elements is the time units. 
     ## so the vector collects number of latent/symp/asymp at time t. 

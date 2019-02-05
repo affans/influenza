@@ -1,4 +1,8 @@
 mutable struct Human{T <: Number} ## mutable structs are stored on the heap 
+    strains_matrix::Array{Int8,2}
+    Vector_time::Array{Int64,1}
+    NumberStrains::Int64
+    EfficacyVS::Float64
     index::T
     health::HEALTH
     swap::HEALTH #do we need  this? We can do a sequential atualization
@@ -18,11 +22,12 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     daily_contacts::T
     Coverage::Float64
     NumberFails::T
-
-    Human{Int64}() = new(-1, SUSC, UNDEF, 0, 999, 0.0, -1, UNDEF,
+    #Here I added the strain matrix, a vector for the time the strain showed up, number of strains in the body, and
+    #the efficacy of the vaccine against the strain that was transmitted (necessary for the asymp-symp trial)
+    Human{Int64}(P::InfluenzaParameters) = new(zeros(Int8,P.matrix_strain_lines,P.sequence_size),zeros(Int64,P.matrix_strain_lines),0,0,-1, SUSC, UNDEF, 0, 999, 0.0, -1, UNDEF,
                             nothing, nothing, nothing, 0, 0.0, 0)
-    function Human(idx)
-        h = Human{Int64}()
+    function Human(idx,P::InfluenzaParameters)
+        h = Human{Int64}(P)
         h.index = idx
         return h
     end
@@ -100,10 +105,11 @@ end
 # end
 # @btime bar()
 
-function setup_rand_initial_latent(h, P::InfluenzaParameters)
+function setup_rand_initial_latent(h, P::InfluenzaParameters,Original_Strain::Array{Int8,1},t::Int64)
     randperson = rand(1:P.grid_size_human)
     make_human_latent(h[randperson], P)
     h[randperson].WhoInf = 0 ## no one infected this person
+    h[randperson].strains_matrix[1,:] = Original_Strain
     return randperson
 end
 
@@ -120,9 +126,12 @@ end
     h.health = ASYMP    # make the health ->inf
     h.swap = UNDEF
     d = LogNormal(P.log_normal_mean,sqrt(P.log_normal_shape))
-    h.statetime = min(15,ceil(rand(d)))
+    h.statetime = min(P.max_infectious_period,ceil(rand(d)))
     h.timeinstate = 0
     h.WentTo = ASYMP
+
+    h.NumberStrains = h.NumberStrains + 1
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime)
 end
 
 @inline function make_human_symp(h::Human, P::InfluenzaParameters)
@@ -130,9 +139,12 @@ end
     h.health = SYMP    # make the health ->inf
     h.swap = UNDEF
     d = LogNormal(P.log_normal_mean,sqrt(P.log_normal_shape))
-    h.statetime = min(15,ceil(rand(d)))
+    h.statetime = min(P.max_infectious_period,ceil(rand(d)))
     h.timeinstate = 0
     h.WentTo = SYMP
+
+    h.NumberStrains = h.NumberStrains + 1
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime)
 end
 
 @inline function make_human_recovered(h::Human, P::InfluenzaParameters)
@@ -151,7 +163,7 @@ function increase_timestate(h::Human,P::InfluenzaParameters)
             h.swap = REC
         elseif h.health == LAT
             prob = (P.ProbAsympMax - P.ProbAsympMin)*rand()+P.ProbAsympMin
-            if rand() < (1 - prob) * (1 - h.vaccineEfficacy)
+            if rand() < (1 - prob) * (1 - h.EfficacyVS)
                 h.swap = SYMP
             else h.swap = ASYMP
             end

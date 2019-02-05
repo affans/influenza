@@ -41,7 +41,7 @@ function _clustercheck()
     end 
 end
 
-## given an attack rate and vaccine effiacy, it creates a string out of that information. 
+## given an attack rate and vaccine efficacy, it creates a string out of that information. 
 create_fn(ar, ve) = "ar_$(replace(string(ar), "." => "_"))_ve_$(replace(string(ve), "." => "_"))"
 
 function create_folder()

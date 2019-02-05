@@ -22,7 +22,14 @@
     transmission_beta::Float64 = 0.079 # we need to calibrate this for 1%, 4% and 8% clinical attack rate (symptomatic cases)
     log_normal_mean::Float64 = 1.0 # distribution for infectious period ## scale value
     log_normal_shape::Float64 = 0.4356
-    
+    max_infectious_period::Int64 = 15
+    ####Mutation parameters
+
+    mutation_rate::Float64 = 0.005
+    matrix_strain_lines::Int64 = 100 #number of strains it is possible to save
+    ##increasing the mutation rate, it is necessary to increase this number
+    sequence_size::Int64 = 566 #number of strain's sites.
+    number_of_states::Int8 = 20 ##number of different states of the sites
 end
 
 ## age distribution discrete for humans, Canada
