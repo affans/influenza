@@ -4,14 +4,14 @@ using DelimitedFiles
 using Distributed
 using Base.Filesystem
 ## ADDED PACKAGES
-using ClusterManagers
+#using ClusterManagers
 using DataFrames
 using CSV
 using JSON
 using Statistics
-using VegaLite
-import REPL
-using REPL.TerminalMenus
+#using VegaLite
+#import REPL
+#using REPL.TerminalMenus
 
 ## call all the using in main package to trigger precompilation 
 ## the precompilation files will get shared amongst all nodes so won't clash with `@everywhere` triggering precompilation
@@ -30,10 +30,10 @@ if options[choice] == "yes"
     addprocs(SlurmManager(544), partition="defq", N=17)
 end
 @everywhere include("Influenza.jl")
-@everywhere using .InfluenzaModel
+#@everywhere using .InfluenzaModel
 
 ## simulation global Parameters
-const NUMOFSIMS = 3000
+const NUMOFSIMS = 100
 
 function _clustercheck()
     if nprocs() == 1 && NUMOFSIMS > 10
@@ -54,7 +54,7 @@ end
 
 function run_beta(β_range, ve)
     ## runs the specified number of simulations for beta (or a range of betas) 
-    _clustercheck()
+    #_clustercheck()
     RF = create_folder()  ## to store the results
     prgess = Progress(length(β_range), 1)  ## a progressbar, minimum update interval: 1 second    
     for β in β_range

@@ -1,0 +1,19 @@
+{
+    "sim_time": 250,
+    "grid_size_human": 10000,
+    "initial_infected": 1,
+    "Latent_period_Max": 2,
+    "Latent_period_Min": 1,
+    "ProbAsympMin": 0.3,
+    "ProbAsympMax": 0.7,
+    "reduction_factor": 0.0,
+    "vaccine_efficacy": 0.2,
+    "transmission_beta": 0.079,
+    "log_normal_mean": 1.0,
+    "log_normal_shape": 0.4356,
+    "max_infectious_period": 15,
+    "mutation_rate": 0.0,
+    "matrix_strain_lines": 100,
+    "sequence_size": 566,
+    "number_of_states": 20
+}

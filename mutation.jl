@@ -7,7 +7,7 @@ function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int6
     Time_Strain[1] = 0 ### the original strain is generated at time 0
     
 
-    while j != n ##I want to do this until there is no more strains to search
+    while j != n ##Do this until there is no more strains to search
         j+=1 ##going to the next strain
         Time_Vector_Size = zeros(Int64,(P.max_infectious_period+P.Latent_period_Max)) ##This vector saves the number of sites changing at that time step
         Time_Matrix = zeros(Int64,100,(P.max_infectious_period+P.Latent_period_Max)) ##This matrix saves which sites changed at a given time step
@@ -43,7 +43,7 @@ function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int6
     
     end
 
-    return Matrix_Of_Strains,Time_Strain,n ##return the strain matrix, when they were generated and how many they are
+    return Matrix_Of_Strains,Time_Strain,n ##return the strain matrix, when the strains were generated and how many they are
 
 end
 

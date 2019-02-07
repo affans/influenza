@@ -1,4 +1,4 @@
-module InfluenzaModel
+#module InfluenzaModel
 
 using Parameters      ## with julia 1.1 this is now built in.
 using ProgressMeter   ## can now handle parallel with progress_pmap
@@ -56,7 +56,7 @@ function main(simnum::Int64, P::InfluenzaParameters)
 
     ## main simulation loop.
     for t=1:P.sim_time        
-        contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General)
+        contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General,Vaccine_Strain)
         for i=1:P.grid_size_human
            increase_timestate(humans[i], P)
         end      
@@ -92,7 +92,9 @@ function main(simnum::Int64, P::InfluenzaParameters)
         contact_groups[i] = humans[i].contact_group           
         demographic_group[i] = humans[i].group
         number_of_fails[i] = humans[i].NumberFails              
-        vax_status[i] = humans[i].vaccineEfficacy > 0 ? 1 : 0  
+        vax_status[i] = humans[i].vaccineEfficacy > 0 ? 1 : 0 ##I don't like this system of checking
+        #because humans[i].vaccineEfficacy is a float and, sometimes, the compiler might understand it > 0
+
         ## if humans[i] was infected (another way to check is for WentTo == SYMP/ASYMP) -- good way to test the model.
         if !(humans[i].health == SUSC)
             if humans[i].WhoInf > 0 
@@ -110,5 +112,5 @@ function main(simnum::Int64, P::InfluenzaParameters)
     vax_status, SympOrNot, demographic_group
 end
 
-end
+#end
 

@@ -8,8 +8,8 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     swap::HEALTH #do we need  this? We can do a sequential atualization
     timeinstate::T
     statetime::T
-
-    #vaccinationStatus::T
+    latenttime::Int64
+    vaccinationStatus::T
     vaccineEfficacy::Float64
 
     WhoInf::T
@@ -24,7 +24,7 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     NumberFails::T
     #Here I added the strain matrix, a vector for the time the strain showed up, number of strains in the body, and
     #the efficacy of the vaccine against the strain that was transmitted (necessary for the asymp-symp trial)
-    Human{Int64}(P::InfluenzaParameters) = new(zeros(Int8,P.matrix_strain_lines,P.sequence_size),zeros(Int64,P.matrix_strain_lines),0,0,-1, SUSC, UNDEF, 0, 999, 0.0, -1, UNDEF,
+    Human{Int64}(P::InfluenzaParameters) = new(zeros(Int8,P.matrix_strain_lines,P.sequence_size),zeros(Int64,P.matrix_strain_lines),0,0,-1, SUSC, UNDEF, 0, 999,0,0, 0.0, -1, UNDEF,
                             nothing, nothing, nothing, 0, 0.0, 0)
     function Human(idx,P::InfluenzaParameters)
         h = Human{Int64}(P)
@@ -118,6 +118,7 @@ end
     h.health = LAT
     h.swap = UNDEF
     h.statetime = rand(P.Latent_period_Min:P.Latent_period_Max)
+    h.latenttime = h.statetime
     h.timeinstate = 0    
 end
 
@@ -225,6 +226,7 @@ end
         MaxFra,MinFra = frailty(h[i].age)
         FrIndex = rand()*(MaxFra-MinFra)+MinFra
         h[i].vaccineEfficacy = round(P.vaccine_efficacy*(1.0-FrIndex), digits = 3)
+        h[i].vaccinationStatus = 1
     end
 end
 
