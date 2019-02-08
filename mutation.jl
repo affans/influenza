@@ -1,4 +1,7 @@
 function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int64,statetime::Int64,latenttime::Int64)
+    #this function receives the strain that infected the individual, the parameters, the number of strains (usually 1),
+    #and the infected period
+    #it will return a matrix with the strains that appeared before 1/2 infected period
     t = statetime+latenttime
     j = n-1 ###strain index
     Matrix_Of_Strains = zeros(Int8,P.matrix_strain_lines,P.sequence_size) ###Returning matrix with strains
@@ -49,6 +52,8 @@ end
 
 
 function Calculating_Distance(humans::Array{Human},P::InfluenzaParameters)
+    #calculating the distance between all strains that appeared in the population (before 1/2 infected period)
+    
     n::Int64 = 0
     for i = 1:P.grid_size_human
         n+=humans[i].NumberStrains
@@ -74,6 +79,8 @@ function Calculating_Distance(humans::Array{Human},P::InfluenzaParameters)
 end
 
 function Calculating_Distance_Two_Strains(A::Array{Int8,1},B::Array{Int8,1})
+    #calculating the antigenic distance between strains A and B
+    #info: in this model, each strain corresponds to 566 a.a. with 20 possible states each one.
     soma::Int64 = 0
     for  k = 1:length(A)
         if A[k] != B[k]
@@ -84,12 +91,15 @@ function Calculating_Distance_Two_Strains(A::Array{Int8,1},B::Array{Int8,1})
 end
 
 function ProbOfTransmission(ProbTrans::Float64,VaccineEfVector::Array{Float64,1})
+    #the prob of transmission is the Basic prob times the average probability of vaccine fails
     Mean1::Float64 = sum(VaccineEfVector)/length(VaccineEfVector)
     prob::Float64 = ProbTrans*(1-Mean1)
     return prob
 end
 
 function Calculating_Efficacy(strains_matrix::Array{Int8,2},NumberStrains::Int64,Vaccine_Strain::Array{Int8,1},vaccineEfficacy::Float64,P::InfluenzaParameters)
+    ##Vaccine effectiveness is calculated based on the antigenic distance.
+    
     VaccineEfVector = zeros(Float64,NumberStrains)
     p::Float64 = 0.0
     for i = 1:NumberStrains
@@ -103,7 +113,7 @@ function Calculating_Efficacy(strains_matrix::Array{Int8,2},NumberStrains::Int64
 end
 
 function Which_One_Will_Transmit(VaccineEfVector::Array{Float64,1},Vector_time::Array{Int64,1},timeinstate::Int64,latenttime::Int64)
-
+## The strain is chosen based on a Fitness function that depends on the time it is in the body and the V.Ef.
     probs = zeros(Float64,length(VaccineEfVector))#ones(Float64,length(VaccineEfVector))# 
     for i = 1:length(VaccineEfVector)
         probs[i] = (1-VaccineEfVector[i])*(timeinstate+latenttime-Vector_time[i])
@@ -117,7 +127,7 @@ function Which_One_Will_Transmit(VaccineEfVector::Array{Float64,1},Vector_time::
 end
 
 function Creating_Vaccine_Vector(Vaccine_Strain::Array{Int8,1},P::InfluenzaParameters)
-    
+    ##This function just creates a random strain to begin the simulations.
     for i = 1:P.sequence_size
         Vaccine_Strain[i] = Int8(rand(1:P.number_of_states))
     end
