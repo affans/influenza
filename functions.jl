@@ -1,4 +1,4 @@
-function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm, nagm, cmg,Vaccine_Strain::Array{Int8,1})
+function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm, nagm, cmg,Vaccine_Strain::Array{Int8,1},rng1)
     for i=1:length(h)
         if h[i].health == SUSC
             # don't need to save this information... we might
@@ -18,7 +18,7 @@ function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm
                         VaccineEfVector = Calculating_Efficacy(h[r].strains_matrix[available_strains,:],length(available_strains),Vaccine_Strain,h[i].vaccineEfficacy,P)
 
                         if rand() < ProbOfTransmission(P.transmission_beta,VaccineEfVector)
-                            TransmitingStrain = Which_One_Will_Transmit(VaccineEfVector,h[r].Vector_time[available_strains],h[r].timeinstate,h[r].latenttime)
+                            TransmitingStrain = Which_One_Will_Transmit(VaccineEfVector,h[r].Vector_time[available_strains],h[r].timeinstate,h[r].latenttime,rng1)
                             h[i].strains_matrix[1,:] =  h[r].strains_matrix[available_strains[TransmitingStrain],:]
                             h[i].EfficacyVS = VaccineEfVector[TransmitingStrain]
                             h[i].swap = LAT

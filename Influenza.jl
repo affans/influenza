@@ -1,4 +1,4 @@
-#module InfluenzaModel
+module InfluenzaModel
 
 using Parameters      ## with julia 1.1 this is now built in.
 using ProgressMeter   ## can now handle parallel with progress_pmap
@@ -23,6 +23,7 @@ end
 
 function main(simnum::Int64, P::InfluenzaParameters)
     Random.seed!(simnum)
+    rng1 = MersenneTwister(simnum*100)
     #println("starting simulation number: $simnum")
     #println("transmission: $(P.transmission_beta)")
     humans = init(P)
@@ -30,7 +31,7 @@ function main(simnum::Int64, P::InfluenzaParameters)
     apply_vaccination(humans,P)    ## TO DO, unit tests, plotting
     
     Vaccine_Strain = Vector{Int8}(undef,P.sequence_size)
-    Creating_Vaccine_Vector(Vaccine_Strain,P)
+    Creating_Vaccine_Vector(Vaccine_Strain,P,rng1)
 
     initial = setup_rand_initial_latent(humans,P,Vaccine_Strain,0) ## returns the ID of the initial person
 
@@ -56,11 +57,11 @@ function main(simnum::Int64, P::InfluenzaParameters)
 
     ## main simulation loop.
     for t=1:P.sim_time        
-        contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General,Vaccine_Strain)
+        contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General,Vaccine_Strain,rng1)
         for i=1:P.grid_size_human
            increase_timestate(humans[i], P)
         end      
-        latent_ctr[t], symp_ctr[t], asymp_ctr[t] = update_human(humans,P)
+        latent_ctr[t], symp_ctr[t], asymp_ctr[t] = update_human(humans,P,rng1)
     end
 
     ## find all the humans that went to symptomatic after being infected by the initial latent case.
@@ -112,5 +113,5 @@ function main(simnum::Int64, P::InfluenzaParameters)
     vax_status, SympOrNot, demographic_group
 end
 
-#end
+end
 

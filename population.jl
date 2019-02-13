@@ -122,7 +122,7 @@ end
     h.timeinstate = 0    
 end
 
-@inline function make_human_asymp(h::Human, P::InfluenzaParameters)
+@inline function make_human_asymp(h::Human, P::InfluenzaParameters,rng1)
     ## make the i'th human infected
     h.health = ASYMP    # make the health ->inf
     h.swap = UNDEF
@@ -132,10 +132,10 @@ end
     h.WentTo = ASYMP
 
     h.NumberStrains = h.NumberStrains + 1
-    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime)
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
-@inline function make_human_symp(h::Human, P::InfluenzaParameters)
+@inline function make_human_symp(h::Human, P::InfluenzaParameters,rng1)
     ## make the i'th human infected
     h.health = SYMP    # make the health ->inf
     h.swap = UNDEF
@@ -145,7 +145,7 @@ end
     h.WentTo = SYMP
 
     h.NumberStrains = h.NumberStrains + 1
-    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime)
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
 @inline function make_human_recovered(h::Human, P::InfluenzaParameters)
@@ -172,7 +172,7 @@ function increase_timestate(h::Human,P::InfluenzaParameters)
     end
 end
 
-function update_human(h, P::InfluenzaParameters)
+function update_human(h, P::InfluenzaParameters,rng1)
     n1::Int64 = 0
     n2::Int64 = 0
     n3::Int64 = 0
@@ -181,10 +181,10 @@ function update_human(h, P::InfluenzaParameters)
             make_human_latent(h[i],P)
             n1+=1
         elseif h[i].swap == SYMP
-            make_human_symp(h[i],P)
+            make_human_symp(h[i],P,rng1)
             n2+=1
         elseif h[i].swap == ASYMP
-            make_human_asymp(h[i],P)
+            make_human_asymp(h[i],P,rng1)
             n3+=1
         elseif h[i].swap == REC
             make_human_recovered(h[i],P)

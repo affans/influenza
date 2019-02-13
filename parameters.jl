@@ -25,7 +25,7 @@
     max_infectious_period::Int64 = 15
     ####Mutation parameters
 
-    mutation_rate::Float64 = 0.000
+    mutation_rate::Float64 = 0.03
     matrix_strain_lines::Int64 = 100 #number of strains it is possible to save
     ##increasing the mutation rate, it is necessary to increase this number
     sequence_size::Int64 = 566 #number of strain's sites.

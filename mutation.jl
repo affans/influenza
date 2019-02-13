@@ -1,4 +1,4 @@
-function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int64,statetime::Int64,latenttime::Int64)
+function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int64,statetime::Int64,latenttime::Int64,rng1)
     #this function receives the strain that infected the individual, the parameters, the number of strains (usually 1),
     #and the infected period
     #it will return a matrix with the strains that appeared before 1/2 infected period
@@ -17,8 +17,8 @@ function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int6
         if Time_Strain[j] < (latenttime + statetime/2) ###strains after the half of infectious period do not matter
             probability = (1-exp(-1.0*P.mutation_rate*(t-Time_Strain[j])/365.0))
             for i = 1:P.sequence_size ###running the sites
-                if rand() < probability#CumProb[t-Time_Strain[j]] ##checking if it will change
-                    time = rand((Time_Strain[j]+1):t) ###selecting a random time step to change it
+                if rand(rng1) < probability#CumProb[t-Time_Strain[j]] ##checking if it will change
+                    time = rand(rng1,(Time_Strain[j]+1):t) ###selecting a random time step to change it
                     Time_Vector_Size[time]+=1 ###increasing the number of sites that changed at time step "time"
                     Time_Matrix[Time_Vector_Size[time],time] = i ##saving the site
                 end
@@ -35,7 +35,7 @@ function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int6
                     ##this loop guarantees that the new state is different from the old one
                     change::Int8 = Matrix_Of_Strains[n,Time_Matrix[time_count,time]] 
                     while change == Matrix_Of_Strains[n,Time_Matrix[time_count,time]]
-                        change = rand(1:P.number_of_states)
+                        change = rand(rng1,1:P.number_of_states)
                     end
                     ###########################
                     Matrix_Of_Strains[n,Time_Matrix[time_count,time]] = change ##changing the site's state
@@ -112,7 +112,7 @@ function Calculating_Efficacy(strains_matrix::Array{Int8,2},NumberStrains::Int64
     return VaccineEfVector
 end
 
-function Which_One_Will_Transmit(VaccineEfVector::Array{Float64,1},Vector_time::Array{Int64,1},timeinstate::Int64,latenttime::Int64)
+function Which_One_Will_Transmit(VaccineEfVector::Array{Float64,1},Vector_time::Array{Int64,1},timeinstate::Int64,latenttime::Int64,rng1)
 ## The strain is chosen based on a Fitness function that depends on the time it is in the body and the V.Ef.
     probs = zeros(Float64,length(VaccineEfVector))#ones(Float64,length(VaccineEfVector))# 
     for i = 1:length(VaccineEfVector)
@@ -121,14 +121,14 @@ function Which_One_Will_Transmit(VaccineEfVector::Array{Float64,1},Vector_time::
   
     probs = probs/sum(probs)
     probs = cumsum(probs)
-    r = rand()
+    r = rand(rng1)
     retorno = findfirst(x->x>r,probs)
     return retorno
 end
 
-function Creating_Vaccine_Vector(Vaccine_Strain::Array{Int8,1},P::InfluenzaParameters)
+function Creating_Vaccine_Vector(Vaccine_Strain::Array{Int8,1},P::InfluenzaParameters,rng1)
     ##This function just creates a random strain to begin the simulations.
     for i = 1:P.sequence_size
-        Vaccine_Strain[i] = Int8(rand(1:P.number_of_states))
+        Vaccine_Strain[i] = Int8(rand(rng1,1:P.number_of_states))
     end
 end

@@ -4,21 +4,21 @@ using DelimitedFiles
 using Distributed
 using Base.Filesystem
 ## ADDED PACKAGES
-#using ClusterManagers
+using ClusterManagers
 using DataFrames
 using CSV
 using JSON
 using Statistics
-#using VegaLite
-#import REPL
-#using REPL.TerminalMenus
+using VegaLite
+import REPL
+using REPL.TerminalMenus
 
 ## call all the using in main package to trigger precompilation 
 ## the precompilation files will get shared amongst all nodes so won't clash with `@everywhere` triggering precompilation
 using Parameters      ## with julia 1.1 this is now built in.
 using ProgressMeter   ## can now handle parallel with progress_pmap
 #using PmapProgressMeter
-#using DataFrames
+using DataFrames
 using Distributions
 using StatsBase
 using StaticArrays
