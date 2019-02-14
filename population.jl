@@ -9,7 +9,7 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     timeinstate::T
     statetime::T
     latenttime::Int64
-    vaccinationStatus::T
+    vaccinationStatus::Int64
     vaccineEfficacy::Float64
 
     WhoInf::T
