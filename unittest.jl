@@ -353,12 +353,13 @@ total_number_of_strains = sum(auxSum)
 auxSum = zeros(Int64,total_number_of_strains)
 
 
-count = 1
-for i = 1:length(WhoGotInf)
-    count = 1
-    for j = 1:humans[WhoGotInf[i]].NumberStrains
-        auxSum[count] = Calculating_Distance_Two_Strains(humans[WhoGotInf[i]].strains_matrix[j,:],Vaccine_Strain)
-        count = count+1
+count = 0
+for i = 1:10
+    
+    for j = 1:humans[i].NumberStrains
+        global count = count+1
+        auxSum[count] = Calculating_Distance_Two_Strains(humans[i].strains_matrix[j,:],Vaccine_Strain)
+        
         println(count)
     end
 end

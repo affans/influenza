@@ -88,29 +88,44 @@ function main(simnum::Int64, P::InfluenzaParameters)
     infection_matrix = zeros(Int64, 15, 15)          
     InfOrNot = zeros(Int64, P.grid_size_human)         ## at the end of the simulation, is the person still susceptible?
     SympOrNot = zeros(Int64, P.grid_size_human)        ## at the end of the simulation, if the person was infected, whether they went symptomatic/asymptomatic
-
+    pv = zeros(Int64,P.matrix_strain_lines)
+    pnv = zeros(Int64,P.matrix_strain_lines)
+    Ef = zeros(Float64,P.matrix_strain_lines)
+   
     for i = 1:length(humans)        
         contact_groups[i] = humans[i].contact_group           
         demographic_group[i] = humans[i].group
         number_of_fails[i] = humans[i].NumberFails              
         vax_status[i] = humans[i].vaccineEfficacy > 0 ? 1 : 0 ##I don't like this system of checking
         #because humans[i].vaccineEfficacy is a float and, sometimes, the compiler might understand it > 0
-
+        auxP1::Int64 = -1
         ## if humans[i] was infected (another way to check is for WentTo == SYMP/ASYMP) -- good way to test the model.
         if !(humans[i].health == SUSC)
             if humans[i].WhoInf > 0 
+                
                 infection_matrix[humans[i].contact_group, humans[humans[i].WhoInf].contact_group] += 1 
+                auxP = Int64(Calculating_Distance_Two_Strains(Vaccine_Strain,humans[i].strains_matrix[1,:]))+1
+                auxP1 = auxP-1
+               # println([i auxP])
+                if humans[i].vaccinationStatus == 1
+                    pv[auxP]+=1
+                else
+                    pnv[auxP]+=1
+                end
+                Ef[auxP] += humans[i].EfficacyVS
             end                        
             InfOrNot[i] = 1
             SympOrNot[i] = Int(humans[i].WentTo)            
         end
     end
 
+
+
     return latent_ctr, symp_ctr, asymp_ctr, 
     numb_first_inf, numb_symp_inf, numb_asymp_inf, 
     infection_matrix, Fail_Contact_Matrix, Contact_Matrix_General, 
     contact_groups, number_of_fails, InfOrNot, 
-    vax_status, SympOrNot, demographic_group
+    vax_status, SympOrNot, demographic_group,Ef,pv
 end
 
 end

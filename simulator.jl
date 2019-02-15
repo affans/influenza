@@ -33,7 +33,7 @@ end
 @everywhere using .InfluenzaModel
 
 ## simulation global Parameters
-const NUMOFSIMS = 100
+const NUMOFSIMS = 1000
 
 function _clustercheck()
     if nprocs() == 1 && NUMOFSIMS > 10
@@ -54,7 +54,7 @@ end
 
 function run_beta(β_range, ve)
     ## runs the specified number of simulations for beta (or a range of betas) 
-    #_clustercheck()
+    _clustercheck()
     RF = create_folder()  ## to store the results
     prgess = Progress(length(β_range), 1)  ## a progressbar, minimum update interval: 1 second    
     for β in β_range
@@ -80,7 +80,7 @@ function run_attackrates(ARS, VES)
     ## the beta values are calculated on the fly for each attack rate
     # common ars: 0.04, 0.08, 0.12, 0.20, 0.30, 0.40
     # common ve: 30%, 40%, 50%, 60%, 70%, 80%
-    #_clustercheck()
+    _clustercheck()
     RF = create_folder()
     #f(y) = round((y + 0.4931677)/24.53868186, digits = 6)  
     #f(t) = round((t + 1.09056771093182)/  58.2096402005676, digits=6)
@@ -93,7 +93,7 @@ function run_attackrates(ARS, VES)
 
     for ar in ARS, ve in VES        
         β = f(ar)         
-        @everywhere P = Main.InfluenzaModel.InfluenzaParameters(grid_size_human=1000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.1)
+        @everywhere P = Main.InfluenzaModel.InfluenzaParameters(grid_size_human=10000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.1)
        # @everywhere P = InfluenzaParameters(grid_size_human=1000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.1)          
         results = pmap(x -> main(x, P), 1:NUMOFSIMS)
         dname = "$RF/$(create_fn(ar, ve))"
@@ -129,7 +129,9 @@ function dataprocess(results, P::InfluenzaParameters; fileappend="./")
     Fail_Matrix = zeros(Int64, 15, 15)
     Infection_Matrix_average = zeros(Float64, 15, 15)
     Contact_Matrix_General = zeros(Float64, 15, 15)
-  
+    Ef   = zeros(Float64, P.matrix_strain_lines, NUMOFSIMS)
+    PV = zeros(Float64, P.matrix_strain_lines, NUMOFSIMS)
+
     for i=1:NUMOFSIMS
         resultsL[:,i] = results[i][1]
         resultsS[:,i] = results[i][2]
@@ -149,6 +151,8 @@ function dataprocess(results, P::InfluenzaParameters; fileappend="./")
         VacStatus[:,i] = results[i][13]
         resultsSympOrNot[:, i] = results[i][14]
         resultsDemoGroups[:, i] = results[i][15]
+        Ef[:, i] = results[i][16]
+        PV[:, i] = results[i][17]
     end
     Infection_Matrix = Infection_Matrix/NUMOFSIMS
     Fail_Matrix =  Fail_Matrix/NUMOFSIMS
@@ -169,6 +173,8 @@ function dataprocess(results, P::InfluenzaParameters; fileappend="./")
     writedlm(string("$fileappend", "_VacStatus.dat"),VacStatus)
     writedlm(string("$fileappend", "_SympOrNot.dat"),resultsSympOrNot)
     writedlm(string("$fileappend", "_DemoGroups.dat"),resultsDemoGroups)
+    writedlm(string("$fileappend", "_Ef.dat"),Ef)
+    writedlm(string("$fileappend", "_PV.dat"),PV)
     JSON.print(open(string("$fileappend", "_parameters.dat"), "w"), P, 4)
 end
 
