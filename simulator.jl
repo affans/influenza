@@ -93,7 +93,8 @@ function run_attackrates(ARS, VES)
 
     for ar in ARS, ve in VES        
         β = f(ar)         
-        @everywhere P = Main.InfluenzaModel.InfluenzaParameters(grid_size_human=1000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.0)          
+        @everywhere P = Main.InfluenzaModel.InfluenzaParameters(grid_size_human=1000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.1)
+       # @everywhere P = InfluenzaParameters(grid_size_human=1000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.1)          
         results = pmap(x -> main(x, P), 1:NUMOFSIMS)
         dname = "$RF/$(create_fn(ar, ve))"
         dataprocess(results, P, fileappend=dname)

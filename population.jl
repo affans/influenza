@@ -110,6 +110,7 @@ function setup_rand_initial_latent(h, P::InfluenzaParameters,Original_Strain::Ar
     make_human_latent(h[randperson], P)
     h[randperson].WhoInf = 0 ## no one infected this person
     h[randperson].strains_matrix[1,:] = Original_Strain
+    h[randperson].NumberStrains = h[randperson].NumberStrains + 1
     return randperson
 end
 
@@ -131,7 +132,7 @@ end
     h.timeinstate = 0
     h.WentTo = ASYMP
 
-    h.NumberStrains = h.NumberStrains + 1
+   # h.NumberStrains = h.NumberStrains + 1
     h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
@@ -144,7 +145,7 @@ end
     h.timeinstate = 0
     h.WentTo = SYMP
 
-    h.NumberStrains = h.NumberStrains + 1
+    #h.NumberStrains = h.NumberStrains + 1
     h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
@@ -177,13 +178,16 @@ function update_human(h, P::InfluenzaParameters,rng1)
     n2::Int64 = 0
     n3::Int64 = 0
     for i=1:length(h)
+        
         if h[i].swap == LAT
             make_human_latent(h[i],P)
             n1+=1
         elseif h[i].swap == SYMP
+            
             make_human_symp(h[i],P,rng1)
             n2+=1
         elseif h[i].swap == ASYMP
+             
             make_human_asymp(h[i],P,rng1)
             n3+=1
         elseif h[i].swap == REC

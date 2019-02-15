@@ -19,6 +19,7 @@ function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm
 
                         if rand() < ProbOfTransmission(P.transmission_beta,VaccineEfVector)
                             TransmitingStrain = Which_One_Will_Transmit(VaccineEfVector,h[r].Vector_time[available_strains],h[r].timeinstate,h[r].latenttime,rng1)
+                            h[i].NumberStrains = h[i].NumberStrains + 1
                             h[i].strains_matrix[1,:] =  h[r].strains_matrix[available_strains[TransmitingStrain],:]
                             h[i].EfficacyVS = VaccineEfVector[TransmitingStrain]
                             h[i].swap = LAT
@@ -30,8 +31,9 @@ function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm
                             
                         if rand()< P.transmission_beta
                             TransmitingStrain = Which_One_Will_Transmit(VaccineEfVector,h[r].Vector_time[available_strains],h[r].timeinstate,h[r].latenttime,rng1)
+                            h[i].NumberStrains = h[i].NumberStrains + 1
                             h[i].strains_matrix[1,:] =  h[r].strains_matrix[available_strains[TransmitingStrain],:]
-                            h[i].EfficacyVS = VaccineEfVector[TransmitingStrain]
+                            h[i].EfficacyVS = 0.0
                             h[i].swap = LAT
                             h[i].WhoInf = r
                           #  break
@@ -48,7 +50,9 @@ function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm
 
                         if rand() < ProbOfTransmission((P.transmission_beta*(1-P.reduction_factor)),VaccineEfVector)
                             TransmitingStrain = Which_One_Will_Transmit(VaccineEfVector,h[r].Vector_time[available_strains],h[r].timeinstate,h[r].latenttime,rng1)
+                            h[i].NumberStrains = h[i].NumberStrains + 1
                             h[i].strains_matrix[1,:] =  h[r].strains_matrix[available_strains[TransmitingStrain],:]
+                            h[i].EfficacyVS = VaccineEfVector[TransmitingStrain]
                             h[i].swap = LAT
                             h[i].WhoInf = r
                            # break
@@ -56,7 +60,9 @@ function contact_dynamic2(h, P::InfluenzaParameters, NB, ContactMatrix, fcm, agm
                     else 
                         if rand()< (P.transmission_beta*(1-P.reduction_factor))
                             TransmitingStrain = Which_One_Will_Transmit(VaccineEfVector,h[r].Vector_time[available_strains],h[r].timeinstate,h[r].latenttime,rng1)
+                            h[i].NumberStrains = h[i].NumberStrains + 1
                             h[i].strains_matrix[1,:] =  h[r].strains_matrix[available_strains[TransmitingStrain],:]
+                            h[i].EfficacyVS = 0.0
                             h[i].swap = LAT
                             h[i].WhoInf = r
                            # break
