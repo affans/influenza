@@ -1,11 +1,15 @@
 mutable struct Human{T <: Number} ## mutable structs are stored on the heap 
+    strains_matrix::Array{Int8,2}
+    Vector_time::Array{Int64,1}
+    NumberStrains::Int64
+    EfficacyVS::Float64
     index::T
     health::HEALTH
     swap::HEALTH #do we need  this? We can do a sequential atualization
     timeinstate::T
     statetime::T
-
-    #vaccinationStatus::T
+    latenttime::Int64
+    vaccinationStatus::Int64
     vaccineEfficacy::Float64
 
     WhoInf::T
@@ -18,11 +22,12 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     daily_contacts::T
     Coverage::Float64
     NumberFails::T
-
-    Human{Int64}() = new(-1, SUSC, UNDEF, 0, 999, 0.0, -1, UNDEF,
+    #Here I added the strain matrix, a vector for the time the strain showed up, number of strains in the body, and
+    #the efficacy of the vaccine against the strain that was transmitted (necessary for the asymp-symp trial)
+    Human{Int64}(P::InfluenzaParameters) = new(zeros(Int8,P.matrix_strain_lines,P.sequence_size),zeros(Int64,P.matrix_strain_lines),0,0,-1, SUSC, UNDEF, 0, 999,0,0, 0.0, -1, UNDEF,
                             nothing, nothing, nothing, 0, 0.0, 0)
-    function Human(idx)
-        h = Human{Int64}()
+    function Human(idx,P::InfluenzaParameters)
+        h = Human{Int64}(P)
         h.index = idx
         return h
     end
@@ -100,10 +105,12 @@ end
 # end
 # @btime bar()
 
-function setup_rand_initial_latent(h, P::InfluenzaParameters)
+function setup_rand_initial_latent(h, P::InfluenzaParameters,Original_Strain::Array{Int8,1},t::Int64)
     randperson = rand(1:P.grid_size_human)
     make_human_latent(h[randperson], P)
     h[randperson].WhoInf = 0 ## no one infected this person
+    h[randperson].strains_matrix[1,:] = Original_Strain
+    h[randperson].NumberStrains = h[randperson].NumberStrains + 1
     return randperson
 end
 
@@ -112,27 +119,34 @@ end
     h.health = LAT
     h.swap = UNDEF
     h.statetime = rand(P.Latent_period_Min:P.Latent_period_Max)
+    h.latenttime = h.statetime
     h.timeinstate = 0    
 end
 
-@inline function make_human_asymp(h::Human, P::InfluenzaParameters)
+@inline function make_human_asymp(h::Human, P::InfluenzaParameters,rng1)
     ## make the i'th human infected
     h.health = ASYMP    # make the health ->inf
     h.swap = UNDEF
     d = LogNormal(P.log_normal_mean,sqrt(P.log_normal_shape))
-    h.statetime = min(15,ceil(rand(d)))
+    h.statetime = min(P.max_infectious_period,ceil(rand(d)))
     h.timeinstate = 0
     h.WentTo = ASYMP
+
+   # h.NumberStrains = h.NumberStrains + 1
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
-@inline function make_human_symp(h::Human, P::InfluenzaParameters)
+@inline function make_human_symp(h::Human, P::InfluenzaParameters,rng1)
     ## make the i'th human infected
     h.health = SYMP    # make the health ->inf
     h.swap = UNDEF
     d = LogNormal(P.log_normal_mean,sqrt(P.log_normal_shape))
-    h.statetime = min(15,ceil(rand(d)))
+    h.statetime = min(P.max_infectious_period,ceil(rand(d)))
     h.timeinstate = 0
     h.WentTo = SYMP
+
+    #h.NumberStrains = h.NumberStrains + 1
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
 @inline function make_human_recovered(h::Human, P::InfluenzaParameters)
@@ -151,7 +165,7 @@ function increase_timestate(h::Human,P::InfluenzaParameters)
             h.swap = REC
         elseif h.health == LAT
             prob = (P.ProbAsympMax - P.ProbAsympMin)*rand()+P.ProbAsympMin
-            if rand() < (1 - prob) * (1 - h.vaccineEfficacy)
+            if rand() < (1 - prob) * (1 - h.EfficacyVS)
                 h.swap = SYMP
             else h.swap = ASYMP
             end
@@ -159,19 +173,22 @@ function increase_timestate(h::Human,P::InfluenzaParameters)
     end
 end
 
-function update_human(h, P::InfluenzaParameters)
+function update_human(h, P::InfluenzaParameters,rng1)
     n1::Int64 = 0
     n2::Int64 = 0
     n3::Int64 = 0
     for i=1:length(h)
+        
         if h[i].swap == LAT
             make_human_latent(h[i],P)
             n1+=1
         elseif h[i].swap == SYMP
-            make_human_symp(h[i],P)
+            
+            make_human_symp(h[i],P,rng1)
             n2+=1
         elseif h[i].swap == ASYMP
-            make_human_asymp(h[i],P)
+             
+            make_human_asymp(h[i],P,rng1)
             n3+=1
         elseif h[i].swap == REC
             make_human_recovered(h[i],P)
@@ -213,6 +230,7 @@ end
         MaxFra,MinFra = frailty(h[i].age)
         FrIndex = rand()*(MaxFra-MinFra)+MinFra
         h[i].vaccineEfficacy = round(P.vaccine_efficacy*(1.0-FrIndex), digits = 3)
+        h[i].vaccinationStatus = 1
     end
 end
 

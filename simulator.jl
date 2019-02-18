@@ -4,7 +4,7 @@ using DelimitedFiles
 using Distributed
 using Base.Filesystem
 ## ADDED PACKAGES
-using ClusterManagers
+#using ClusterManagers
 using DataFrames
 using CSV
 using JSON
@@ -18,7 +18,7 @@ using REPL.TerminalMenus
 using Parameters      ## with julia 1.1 this is now built in.
 using ProgressMeter   ## can now handle parallel with progress_pmap
 #using PmapProgressMeter
-#using DataFrames
+using DataFrames
 using Distributions
 using StatsBase
 using StaticArrays
@@ -33,7 +33,7 @@ end
 @everywhere using .InfluenzaModel
 
 ## simulation global Parameters
-const NUMOFSIMS = 3000
+const NUMOFSIMS = 100
 
 function _clustercheck()
     if nprocs() == 1 && NUMOFSIMS > 10
@@ -41,7 +41,7 @@ function _clustercheck()
     end 
 end
 
-## given an attack rate and vaccine effiacy, it creates a string out of that information. 
+## given an attack rate and vaccine efficacy, it creates a string out of that information. 
 create_fn(ar, ve) = "ar_$(replace(string(ar), "." => "_"))_ve_$(replace(string(ve), "." => "_"))"
 
 function create_folder()
@@ -54,12 +54,12 @@ end
 
 function run_beta(β_range, ve)
     ## runs the specified number of simulations for beta (or a range of betas) 
-    _clustercheck()
+    #_clustercheck()
     RF = create_folder()  ## to store the results
     prgess = Progress(length(β_range), 1)  ## a progressbar, minimum update interval: 1 second    
     for β in β_range
         dname = "$RF/beta_$(replace(string(β), "." => "_"))"
-        @everywhere P = InfluenzaParameters(sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β)        
+        @everywhere P = Main.InfluenzaModel.InfluenzaParameters(sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β)        
         results = pmap(x -> main(x, P), 1:NUMOFSIMS)
         dataprocess(results, P, fileappend=dname)   
         create_RES([1,2,3,4,5], RF, β=β, resultformat="beta");
@@ -80,7 +80,7 @@ function run_attackrates(ARS, VES)
     ## the beta values are calculated on the fly for each attack rate
     # common ars: 0.04, 0.08, 0.12, 0.20, 0.30, 0.40
     # common ve: 30%, 40%, 50%, 60%, 70%, 80%
-    _clustercheck()
+    #_clustercheck()
     RF = create_folder()
     #f(y) = round((y + 0.4931677)/24.53868186, digits = 6)  
     #f(t) = round((t + 1.09056771093182)/  58.2096402005676, digits=6)
@@ -93,7 +93,8 @@ function run_attackrates(ARS, VES)
 
     for ar in ARS, ve in VES        
         β = f(ar)         
-        @everywhere P = InfluenzaParameters(sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β)          
+        @everywhere P = Main.InfluenzaModel.InfluenzaParameters(grid_size_human=1000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.1)
+       # @everywhere P = InfluenzaParameters(grid_size_human=1000,sim_time = 250, vaccine_efficacy = $ve, transmission_beta=$β,mutation_rate = 0.1)          
         results = pmap(x -> main(x, P), 1:NUMOFSIMS)
         dname = "$RF/$(create_fn(ar, ve))"
         dataprocess(results, P, fileappend=dname)

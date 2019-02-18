@@ -15,20 +15,25 @@ export init, main, Human, InfluenzaParameters
 include("parameters.jl")
 include("population.jl")
 include("functions.jl")
+include("mutation.jl")
 
-function init()
-    [Human(i) for i = 1:10000]
+function init(P::InfluenzaParameters)
+    [Human(i,P) for i = 1:P.grid_size_human]
 end
 
 function main(simnum::Int64, P::InfluenzaParameters)
     Random.seed!(simnum)
+    rng1 = MersenneTwister(simnum*100)
     #println("starting simulation number: $simnum")
     #println("transmission: $(P.transmission_beta)")
-    humans = init()
+    humans = init(P)
     setup_demographic(humans)  ## TO DO, unit tests, plotting  
     apply_vaccination(humans,P)    ## TO DO, unit tests, plotting
     
-    initial = setup_rand_initial_latent(humans,P) ## returns the ID of the initial person
+    Vaccine_Strain = Vector{Int8}(undef,P.sequence_size)
+    Creating_Vaccine_Vector(Vaccine_Strain,P,rng1)
+
+    initial = setup_rand_initial_latent(humans,P,Vaccine_Strain,0) ## returns the ID of the initial person
 
     ## data collection variables = number of elements is the time units. 
     ## so the vector collects number of latent/symp/asymp at time t. 
@@ -52,11 +57,11 @@ function main(simnum::Int64, P::InfluenzaParameters)
 
     ## main simulation loop.
     for t=1:P.sim_time        
-        contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General)
+        contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General,Vaccine_Strain,rng1)
         for i=1:P.grid_size_human
            increase_timestate(humans[i], P)
         end      
-        latent_ctr[t], symp_ctr[t], asymp_ctr[t] = update_human(humans,P)
+        latent_ctr[t], symp_ctr[t], asymp_ctr[t] = update_human(humans,P,rng1)
     end
 
     ## find all the humans that went to symptomatic after being infected by the initial latent case.
@@ -88,7 +93,9 @@ function main(simnum::Int64, P::InfluenzaParameters)
         contact_groups[i] = humans[i].contact_group           
         demographic_group[i] = humans[i].group
         number_of_fails[i] = humans[i].NumberFails              
-        vax_status[i] = humans[i].vaccineEfficacy > 0 ? 1 : 0  
+        vax_status[i] = humans[i].vaccineEfficacy > 0 ? 1 : 0 ##I don't like this system of checking
+        #because humans[i].vaccineEfficacy is a float and, sometimes, the compiler might understand it > 0
+
         ## if humans[i] was infected (another way to check is for WentTo == SYMP/ASYMP) -- good way to test the model.
         if !(humans[i].health == SUSC)
             if humans[i].WhoInf > 0 

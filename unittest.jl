@@ -264,3 +264,101 @@ demographic_group = zeros(Int64, 10000)
 for i = 1:length(humans)              
     demographic_group[i] = humans[i].group  
 end
+
+aux = zeros(Int64,P.grid_size_human)
+aux2 = zeros(Float64,P.grid_size_human)
+aux3 = zeros(Float64,P.grid_size_human)
+matrix_aux = Array{Int8,2}(undef,1,566)
+matrix_aux[1,:] = Vaccine_Strain
+
+for i=1:P.grid_size_human
+    humans[i].EfficacyVS = Calculating_Efficacy(matrix_aux,1,Vaccine_Strain,humans[i].vaccineEfficacy,P)[1]
+    aux[i] = humans[i].age
+    aux2[i] = humans[i].vaccineEfficacy
+    aux3[i] = humans[i].EfficacyVS
+end
+
+A = [aux aux2 aux3]
+
+importants = findall(x -> x>0.0,A[:,2])
+A = A[importants,:]
+
+writedlm("testeEff.dat",A)
+Random.seed!(1234599)
+
+rng1 = MersenneTwister(1234)
+
+rng2 = MersenneTwister(123024)
+
+rand()
+rand(rng1)
+
+rand!(rng2,zeros(1))
+
+rand!(rng1,zeros(1))
+
+rand!(rng2,zeros(1))[1]
+
+
+
+Strain = zeros(Int8,2,length(Vaccine_Strain))
+Strain[1,:] = Vaccine_Strain
+Strain[2,:] = Vaccine_Strain
+
+for i = 1:30
+    r = rand(1:length(Vaccine_Strain))
+    Strain[2,r] = 0
+
+end
+
+VaccineEfVector = Calculating_Efficacy(Strain,2,Vaccine_Strain,0.6,P)
+
+vacPeople = findall(x->x.vaccinationStatus==1,humans)
+Eff = zeros(Float64,length(vacPeople),3)
+
+for i = 1:length(vacPeople)
+
+    Eff[i,1] = humans[vacPeople[i]].vaccineEfficacy
+    Eff[i,2] = humans[vacPeople[i]].EfficacyVS
+    Eff[i,3] = humans[vacPeople[i]].WhoInf
+end
+Eff
+Dif = Eff[:,1]-Eff[:,2]
+findall(x->Eff[x,1]-Eff[x,2]>0 && Eff[x,3]>0,1:length(vacPeople))
+
+for i = 1:10
+    r = rand(1:length(Vaccine_Strain))
+    Strain[r] = 0
+
+end
+
+Eff = zeros(Float64,length(vacPeople),2)
+
+for i = 1:length(vacPeople)
+
+    Eff[i,1] = humans[vacPeople[i]].vaccineEfficacy
+    Eff[i,2] = Calculating_Efficacy(Strain,1,Vaccine_Strain,humans[vacPeople[i]].vaccineEfficacy,P)[1]
+
+end
+humans[vacPeople].vaccineEfficacy
+NS = humans[WhoGotInf].NumberStrains
+
+auxSum = zeros(Int64,length(WhoGotInf))
+
+for i = 1:length(WhoGotInf)
+    auxSum[i] = humans[WhoGotInf[i]].NumberStrains
+end
+total_number_of_strains = sum(auxSum)
+
+auxSum = zeros(Int64,total_number_of_strains)
+
+
+count = 1
+for i = 1:length(WhoGotInf)
+    count = 1
+    for j = 1:humans[WhoGotInf[i]].NumberStrains
+        auxSum[count] = Calculating_Distance_Two_Strains(humans[WhoGotInf[i]].strains_matrix[j,:],Vaccine_Strain)
+        count = count+1
+        println(count)
+    end
+end
