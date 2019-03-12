@@ -2,7 +2,7 @@
 
 
 @with_kw struct InfluenzaParameters @deftype Int64
-    sim_time = 200
+    sim_time = 250
     grid_size_human = 10000
     initial_infected = 1
 
@@ -25,9 +25,13 @@
     max_infectious_period::Int64 = 15
     ####Mutation parameters
 
-    mutation_rate::Float64 = 0.03
+    mutation_rate_MAX::Float64 = 0.03
+    mutation_rate_MIN::Float64 = 0.01
     matrix_strain_lines::Int64 = 100 #number of strains it is possible to save
     ##increasing the mutation rate, it is necessary to increase this number
+    Number_of_initial_strains::Int64 = 1
+    AGD_Step::Float64 = 0.01
+
     sequence_size::Int64 = 566 #number of strain's sites.
     number_of_states::Int8 = 20 ##number of different states of the sites
 end

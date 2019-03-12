@@ -33,7 +33,7 @@ function main(simnum::Int64, P::InfluenzaParameters)
     Vaccine_Strain = Vector{Int8}(undef,P.sequence_size)
     Creating_Vaccine_Vector(Vaccine_Strain,P,rng1)
 
-    initial = setup_rand_initial_latent(humans,P,Vaccine_Strain,0) ## returns the ID of the initial person
+    initial = setup_rand_initial_latent(humans,P,Vaccine_Strain,0,rng1) ## returns the ID of the initial person
 
     ## data collection variables = number of elements is the time units. 
     ## so the vector collects number of latent/symp/asymp at time t. 
@@ -61,7 +61,7 @@ function main(simnum::Int64, P::InfluenzaParameters)
         for i=1:P.grid_size_human
            increase_timestate(humans[i], P)
         end      
-        latent_ctr[t], symp_ctr[t], asymp_ctr[t] = update_human(humans,P,rng1)
+        latent_ctr[t], symp_ctr[t], asymp_ctr[t] = update_human(humans,P,rng1,t)
     end
 
     ## find all the humans that went to symptomatic after being infected by the initial latent case.
@@ -105,8 +105,8 @@ function main(simnum::Int64, P::InfluenzaParameters)
                 
                 infection_matrix[humans[i].contact_group, humans[humans[i].WhoInf].contact_group] += 1 
                 auxP = Int64(Calculating_Distance_Two_Strains(Vaccine_Strain,humans[i].strains_matrix[1,:]))+1
-                auxP1 = auxP-1
                # println([i auxP])
+               
                 if humans[i].vaccinationStatus == 1
                     pv[auxP]+=1
                 else
@@ -117,15 +117,41 @@ function main(simnum::Int64, P::InfluenzaParameters)
             InfOrNot[i] = 1
             SympOrNot[i] = Int(humans[i].WentTo)            
         end
+
+
     end
 
+    DistTime = Vector{Union{Nothing,Int64}}(nothing,P.sim_time)
 
+    for t = 1:P.sim_time
+        aux = findall(x-> x.TimeGotInf<t && x.recoveredOn>t , humans)
+
+        if length(aux) > 0
+            DistTime[t] = 0
+            for i in aux
+                for j = 1:humans[i].NumberStrains
+                    if (humans[i].Vector_time[j]+humans[i].TimeGotInf) <= t
+                        Distance = Calculating_Distance_Two_Strains(Vaccine_Strain,humans[i].strains_matrix[j,:])
+                        if DistTime[t] < Distance
+                            DistTime[t] = Distance
+                        end
+                    end
+                end
+
+            end
+        else
+            DistTime[t] = -1
+        end
+
+    end
+
+   
 
     return latent_ctr, symp_ctr, asymp_ctr, 
     numb_first_inf, numb_symp_inf, numb_asymp_inf, 
     infection_matrix, Fail_Contact_Matrix, Contact_Matrix_General, 
     contact_groups, number_of_fails, InfOrNot, 
-    vax_status, SympOrNot, demographic_group,Ef,pv
+    vax_status, SympOrNot, demographic_group,Ef,pv,pnv,DistTime
 end
 
 end

@@ -1,13 +1,11 @@
-function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int64,statetime::Int64,latenttime::Int64,rng1)
+function mutation(Matrix_Of_Strains::Array{Int8,2},P::InfluenzaParameters,n::Int64,statetime::Int64,latenttime::Int64,rng1)
     #this function receives the strain that infected the individual, the parameters, the number of strains (usually 1),
     #and the infected period
     #it will return a matrix with the strains that appeared before 1/2 infected period
     t = statetime+latenttime
-    j = n-1 ###strain index
-    Matrix_Of_Strains = zeros(Int8,P.matrix_strain_lines,P.sequence_size) ###Returning matrix with strains
-    Matrix_Of_Strains[1,:] = Original_Strain1 #setting the first one as the original infection
+    j = 0 ###strain index
     Time_Strain = zeros(Int64,P.matrix_strain_lines) ### the time in which the strain was generated
-    Time_Strain[1] = 0 ### the original strain is generated at time 0
+    #Time_Strain[1] = 0 ### the original strain is generated at time 0
     
 
     while j != n ##Do this until there is no more strains to search
@@ -15,7 +13,9 @@ function mutation(Original_Strain1::Array{Int8,1},P::InfluenzaParameters,n::Int6
         Time_Vector_Size = zeros(Int64,(P.max_infectious_period+P.Latent_period_Max)) ##This vector saves the number of sites changing at that time step
         Time_Matrix = zeros(Int64,100,(P.max_infectious_period+P.Latent_period_Max)) ##This matrix saves which sites changed at a given time step
         if Time_Strain[j] < (latenttime + statetime/2) ###strains after the half of infectious period do not matter
-            probability = (1-exp(-1.0*P.mutation_rate*(t-Time_Strain[j])/365.0))
+            
+            mu = (P.mutation_rate_MAX-P.mutation_rate_MIN)*rand(rng1)+P.mutation_rate_MIN
+            probability = (1-exp(-1.0*mu*(t-Time_Strain[j])/365.0))
             for i = 1:P.sequence_size ###running the sites
                 if rand(rng1) < probability#CumProb[t-Time_Strain[j]] ##checking if it will change
                     time = rand(rng1,(Time_Strain[j]+1):t) ###selecting a random time step to change it
@@ -131,4 +131,20 @@ function Creating_Vaccine_Vector(Vaccine_Strain::Array{Int8,1},P::InfluenzaParam
     for i = 1:P.sequence_size
         Vaccine_Strain[i] = Int8(rand(rng1,1:P.number_of_states))
     end
+end
+
+function Changing_a_proportion(Strain::Array{Int8,1},prob::Float64,P::InfluenzaParameters,rng1)
+
+    for i = 1:length(Strain)
+        if rand(rng1)<prob
+            aux::Int8 = Strain[i]
+            while aux == Strain[i]
+              aux = rand(rng1,1:P.number_of_states)
+            end
+            Strain[i] = aux
+        end
+    end
+
+    return Strain
+
 end

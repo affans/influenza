@@ -3,17 +3,22 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     Vector_time::Array{Int64,1}
     NumberStrains::Int64
     EfficacyVS::Float64
+
     index::T
     health::HEALTH
     swap::HEALTH #do we need  this? We can do a sequential atualization
     timeinstate::T
     statetime::T
     latenttime::Int64
+    recoveredOn::Int64
+
     vaccinationStatus::Int64
     vaccineEfficacy::Float64
+    
 
     WhoInf::T
     WentTo::HEALTH  # we want to know whether human was asymptomatic or symptomatic.. need this information for other calculations
+    TimeGotInf::Int64
 
     age::Union{T, Nothing}    
     group::Union{T, Nothing}  
@@ -24,7 +29,7 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     NumberFails::T
     #Here I added the strain matrix, a vector for the time the strain showed up, number of strains in the body, and
     #the efficacy of the vaccine against the strain that was transmitted (necessary for the asymp-symp trial)
-    Human{Int64}(P::InfluenzaParameters) = new(zeros(Int8,P.matrix_strain_lines,P.sequence_size),zeros(Int64,P.matrix_strain_lines),0,0,-1, SUSC, UNDEF, 0, 999,0,0, 0.0, -1, UNDEF,
+    Human{Int64}(P::InfluenzaParameters) = new(zeros(Int8,P.matrix_strain_lines,P.sequence_size),zeros(Int64,P.matrix_strain_lines),0,0,-1, SUSC, UNDEF, 0, 999,0,-1,0, 0.0, -1, UNDEF,-1,
                             nothing, nothing, nothing, 0, 0.0, 0)
     function Human(idx,P::InfluenzaParameters)
         h = Human{Int64}(P)
@@ -105,12 +110,16 @@ end
 # end
 # @btime bar()
 
-function setup_rand_initial_latent(h, P::InfluenzaParameters,Original_Strain::Array{Int8,1},t::Int64)
+function setup_rand_initial_latent(h, P::InfluenzaParameters,Original_Strain::Array{Int8,1},t::Int64,rng1)
     randperson = rand(1:P.grid_size_human)
     make_human_latent(h[randperson], P)
     h[randperson].WhoInf = 0 ## no one infected this person
-    h[randperson].strains_matrix[1,:] = Original_Strain
-    #h[randperson].NumberStrains = h[randperson].NumberStrains + 1
+    for i = 1:P.Number_of_initial_strains
+        h[randperson].strains_matrix[i,:] = Original_Strain
+        h[randperson].strains_matrix[i,:] = Changing_a_proportion(h[randperson].strains_matrix[i,:],(i-1)*P.AGD_Step,P,rng1)
+    end
+
+    h[randperson].NumberStrains = P.Number_of_initial_strains-1
     return randperson
 end
 
@@ -133,7 +142,7 @@ end
     h.WentTo = ASYMP
 
     h.NumberStrains = h.NumberStrains + 1
-    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix,P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
 @inline function make_human_symp(h::Human, P::InfluenzaParameters,rng1)
@@ -146,7 +155,7 @@ end
     h.WentTo = SYMP
 
     h.NumberStrains = h.NumberStrains + 1
-    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix[1,:],P,h.NumberStrains,h.statetime,h.latenttime,rng1)
+    h.strains_matrix,h.Vector_time,h.NumberStrains = mutation(h.strains_matrix,P,h.NumberStrains,h.statetime,h.latenttime,rng1)
 end
 
 @inline function make_human_recovered(h::Human, P::InfluenzaParameters)
@@ -173,7 +182,7 @@ function increase_timestate(h::Human,P::InfluenzaParameters)
     end
 end
 
-function update_human(h, P::InfluenzaParameters,rng1)
+function update_human(h, P::InfluenzaParameters,rng1,t::Int64)
     n1::Int64 = 0
     n2::Int64 = 0
     n3::Int64 = 0
@@ -181,6 +190,7 @@ function update_human(h, P::InfluenzaParameters,rng1)
         
         if h[i].swap == LAT
             make_human_latent(h[i],P)
+            h[i].TimeGotInf = t
             n1+=1
         elseif h[i].swap == SYMP
             
@@ -192,6 +202,7 @@ function update_human(h, P::InfluenzaParameters,rng1)
             n3+=1
         elseif h[i].swap == REC
             make_human_recovered(h[i],P)
+            h[i].recoveredOn = t
         end
     end
     return n1, n2, n3 #corresponds to latent, symp, asymp
