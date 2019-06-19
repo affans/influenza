@@ -188,6 +188,15 @@ function dataprocess(results, P::InfluenzaParameters; fileappend="./")
     PV = zeros(Float64, P.matrix_strain_lines, NUMOFSIMS)
     PNV = zeros(Float64, P.matrix_strain_lines, NUMOFSIMS)
     DistTime = Array{Union{Nothing,Int64},2}(nothing,P.sim_time, NUMOFSIMS)
+    resultsLV = zeros(Int64, P.sim_time, NUMOFSIMS)
+    resultsLNV = zeros(Int64, P.sim_time, NUMOFSIMS)
+    resultsExpV = zeros(Float64, P.sim_time, NUMOFSIMS)
+    resultsExpNV = zeros(Float64, P.sim_time, NUMOFSIMS)
+
+    vac_inf = zeros(Float64, P.sim_time, NUMOFSIMS)
+    unvac_inf = zeros(Float64, P.sim_time, NUMOFSIMS)
+    total_inf = zeros(Float64, P.sim_time, NUMOFSIMS)
+    
 
     for i=1:NUMOFSIMS
         resultsL[:,i] = results[i][1]
@@ -212,6 +221,15 @@ function dataprocess(results, P::InfluenzaParameters; fileappend="./")
         PV[:, i] = results[i][17]
         PNV[:, i] = results[i][18]
         DistTime[:,i] = results[i][19]
+        resultsLV[:,i] = results[i][20]
+        resultsLNV[:,i] = results[i][21]
+        resultsExpV[:,i] = results[i][22]
+        resultsExpNV[:,i] = results[i][23]
+
+        vac_inf[:,i] = results[i][24]
+        unvac_inf[:,i] = results[i][25]
+        total_inf[:,i] = results[i][26]
+        
     end
     Infection_Matrix = Infection_Matrix/NUMOFSIMS
     Fail_Matrix =  Fail_Matrix/NUMOFSIMS
@@ -228,14 +246,22 @@ function dataprocess(results, P::InfluenzaParameters; fileappend="./")
     #writedlm(string("$fileappend", "_ContactMatrixGeneral.dat"),Contact_Matrix_General)
     #writedlm(string("$fileappend", "_NumAgeGroup.dat"),resultsNumAge)
     #writedlm(string("$fileappend", "_FailVector.dat"),resultsFailVector)
-    #writedlm(string("$fileappend", "_InfOrNot.dat"),resultsInfOrNot)
-    #writedlm(string("$fileappend", "_VacStatus.dat"),VacStatus)
-    #writedlm(string("$fileappend", "_SympOrNot.dat"),resultsSympOrNot)
-    #writedlm(string("$fileappend", "_DemoGroups.dat"),resultsDemoGroups)
+    writedlm(string("$fileappend", "_InfOrNot.dat"),resultsInfOrNot)
+    writedlm(string("$fileappend", "_VacStatus.dat"),VacStatus)
+    writedlm(string("$fileappend", "_SympOrNot.dat"),resultsSympOrNot)
+    writedlm(string("$fileappend", "_DemoGroups.dat"),resultsDemoGroups)
     writedlm(string("$fileappend", "_Ef.dat"),Ef)
     writedlm(string("$fileappend", "_PV.dat"),PV)
     writedlm(string("$fileappend", "_PNV.dat"),PNV)
     writedlm(string("$fileappend", "_DistTime.dat"),DistTime)
+    writedlm(string("$fileappend", "_latent_vac.dat"), resultsLV)
+    writedlm(string("$fileappend", "_latent_nvac.dat"), resultsLNV)
+    writedlm(string("$fileappend", "_exposure_vac.dat"), resultsExpV)
+    writedlm(string("$fileappend", "_exposure_nvac.dat"), resultsExpNV)
+    writedlm(string("$fileappend", "_prop_inf_nvac.dat"), unvac_inf)
+    writedlm(string("$fileappend", "_prop_inf_vac.dat"), vac_inf)
+    writedlm(string("$fileappend", "_prop_inf_total.dat"), total_inf)
+    
     JSON.print(open(string("$fileappend", "_parameters.dat"), "w"), P, 4)
 end
 

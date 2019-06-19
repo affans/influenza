@@ -363,3 +363,10 @@ for i = 1:10
         println(count)
     end
 end
+
+for i = 1:80
+
+    if i%7 == 0
+        println("$i")
+    end
+end

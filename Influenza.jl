@@ -41,7 +41,13 @@ function main(simnum::Int64, P::InfluenzaParameters)
     latent_ctr = zeros(Int64, P.sim_time)   
     symp_ctr =   zeros(Int64, P.sim_time)   
     asymp_ctr =  zeros(Int64, P.sim_time)   
- 
+    latent_vac_ctr = zeros(Int64, P.sim_time) 
+    latent_nvac_ctr = zeros(Int64, P.sim_time) 
+
+    exposures_vac_ctr = zeros(Float64, P.sim_time) 
+    exposures_nvac_ctr = zeros(Float64, P.sim_time) 
+   
+
     ## contact matrices
     ## these matrices are used to calculate contact patterns
     Fail_Contact_Matrix    = zeros(Int64, 15, 15)    ## how many times did susc/sick contact group i meet contact group j meet but failed to infect.
@@ -55,13 +61,17 @@ function main(simnum::Int64, P::InfluenzaParameters)
     NB = N_Binomial()
     CM = ContactMatrixFunc()
 
+    vac_prop_ctr = zeros(Float64, P.sim_time) 
+    nvac_prop_ctr = zeros(Float64, P.sim_time) 
+    total_prop_ctr = zeros(Float64, P.sim_time) 
     ## main simulation loop.
     for t=1:P.sim_time        
         contact_dynamic2(humans, P, NB, CM, Fail_Contact_Matrix, Age_group_Matrix, Number_in_age_group, Contact_Matrix_General,Vaccine_Strain,rng1)
         for i=1:P.grid_size_human
            increase_timestate(humans[i], P)
         end      
-        latent_ctr[t], symp_ctr[t], asymp_ctr[t] = update_human(humans,P,rng1,t)
+        latent_ctr[t], symp_ctr[t], asymp_ctr[t], latent_vac_ctr[t], latent_nvac_ctr[t], exposures_vac_ctr[t], exposures_nvac_ctr[t],vac_prop_ctr[t],
+        nvac_prop_ctr[t],total_prop_ctr[t] = update_human(humans,P,rng1,t)
     end
 
     ## find all the humans that went to symptomatic after being infected by the initial latent case.
@@ -91,6 +101,9 @@ function main(simnum::Int64, P::InfluenzaParameters)
     pv = zeros(Int64,P.matrix_strain_lines)
     pnv = zeros(Int64,P.matrix_strain_lines)
     Ef = zeros(Float64,P.matrix_strain_lines)
+
+   
+    
    
     for i = 1:length(humans)        
         contact_groups[i] = humans[i].contact_group           
@@ -151,7 +164,9 @@ function main(simnum::Int64, P::InfluenzaParameters)
     numb_first_inf, numb_symp_inf, numb_asymp_inf, 
     infection_matrix, Fail_Contact_Matrix, Contact_Matrix_General, 
     contact_groups, number_of_fails, InfOrNot, 
-    vax_status, SympOrNot, demographic_group,Ef,pv,pnv,DistTime
+    vax_status, SympOrNot, demographic_group,
+    Ef,pv,pnv,DistTime, latent_vac_ctr, latent_nvac_ctr, 
+    exposures_vac_ctr, exposures_nvac_ctr,vac_prop_ctr,nvac_prop_ctr,total_prop_ctr
 end
 
 end

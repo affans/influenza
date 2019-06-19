@@ -27,10 +27,15 @@ mutable struct Human{T <: Number} ## mutable structs are stored on the heap
     daily_contacts::T
     Coverage::Float64
     NumberFails::T
+    NumberExposures::Int64
+    vac_cont::Int64
+    unvac_cont::Int64
+    vac_infec::Int64
+    unvac_infec::Int64
     #Here I added the strain matrix, a vector for the time the strain showed up, number of strains in the body, and
     #the efficacy of the vaccine against the strain that was transmitted (necessary for the asymp-symp trial)
     Human{Int64}(P::InfluenzaParameters) = new(zeros(Int8,P.matrix_strain_lines,P.sequence_size),zeros(Int64,P.matrix_strain_lines),0,0,-1, SUSC, UNDEF, 0, 999,0,-1,0, 0.0, -1, UNDEF,-1,
-                            nothing, nothing, nothing, 0, 0.0, 0)
+                            nothing, nothing, nothing, 0, 0.0, 0, 0, 0, 0, 0, 0)
     function Human(idx,P::InfluenzaParameters)
         h = Human{Int64}(P)
         h.index = idx
@@ -186,12 +191,34 @@ function update_human(h, P::InfluenzaParameters,rng1,t::Int64)
     n1::Int64 = 0
     n2::Int64 = 0
     n3::Int64 = 0
+    
+    n_lat_vac::Int64 = 0
+    n_lat_nvac::Int64 = 0
+
+    mean_exp_vac::Float64 = 0.0
+    mean_exp_nvac::Float64 = 0.0
+
+    total_contact_vac::Int64 = 0
+    total_contact_nvac::Int64 = 0
+    total_contact::Int64 = 0
+    total_infections_vac::Float64 = 0.0
+    total_infections_nvac::Float64 = 0.0
+    total_infections::Float64 = 0.0
+
     for i=1:length(h)
         
         if h[i].swap == LAT
             make_human_latent(h[i],P)
             h[i].TimeGotInf = t
             n1+=1
+            if h[i].vaccinationStatus == 1
+                n_lat_vac+=1
+                mean_exp_vac += h[i].NumberExposures 
+            else
+                n_lat_nvac+=1
+                mean_exp_nvac += h[i].NumberExposures 
+            end
+
         elseif h[i].swap == SYMP
             
             make_human_symp(h[i],P,rng1)
@@ -203,9 +230,25 @@ function update_human(h, P::InfluenzaParameters,rng1,t::Int64)
         elseif h[i].swap == REC
             make_human_recovered(h[i],P)
             h[i].recoveredOn = t
+            total_contact += h[i].vac_cont+h[i].unvac_cont
+            total_contact_nvac += h[i].unvac_cont
+            total_contact_vac += h[i].vac_cont
+            total_infections += h[i].vac_infec+h[i].unvac_infec
+            total_infections_nvac += h[i].unvac_infec
+            total_infections_vac += h[i].vac_infec
+
         end
     end
-    return n1, n2, n3 #corresponds to latent, symp, asymp
+
+    total_infections = total_infections/total_contact
+    total_infections_nvac = total_infections_nvac/total_contact_nvac
+    total_infections_vac = total_infections_vac/total_contact_vac
+
+
+    mean_exp_nvac = mean_exp_nvac/n_lat_nvac
+    mean_exp_vac = mean_exp_vac/n_lat_vac
+
+    return n1, n2, n3, n_lat_vac, n_lat_nvac, mean_exp_vac, mean_exp_nvac, total_infections_vac,total_infections_nvac,total_infections #corresponds to latent, symp, asymp
 end
 
 function frailty(age)
